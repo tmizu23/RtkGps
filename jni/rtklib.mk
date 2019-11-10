@@ -2,14 +2,14 @@ include $(CLEAR_VARS)
 
 RTKLIB_PATH := RTKLIB
 #ORIGINAL FLAGS
-#RTKLIB_CFLAGS := -DENAGLO -DENAGAL -DENAQZS -DENACMP -DNFREQ=3 -DTRACE
+RTKLIB_CFLAGS := -DENAGLO -DENAGAL -DENAQZS -DENACMP -DNFREQ=3 -DTRACE
 
 
 # Mathieu Peyréga
 # NFREQ cannot be reduced to 2 without modifying also prcopt.c and
 # other wrapper c files that ahrdcode 3 frequencies
 #
-RTKLIB_CFLAGS := -DENAGLO -DENAGAL -DENACMP -DNFREQ=3 -DTRACE
+#RTKLIB_CFLAGS := -DENAGLO -DENAGAL -DENACMP -DNFREQ=3 -DTRACE
 
 LOCAL_MODULE    := rtklib
 
@@ -71,7 +71,6 @@ LOCAL_SRC_FILES += \
     $(RTKLIB_PATH)/src/rcv/rt17.c \
     $(RTKLIB_PATH)/src/rcv/septentrio.c \
     $(RTKLIB_PATH)/src/rcv/skytraq.c \
-    $(RTKLIB_PATH)/src/rcv/ss2.c \
     $(RTKLIB_PATH)/src/rcv/swiftnav.c \
     $(RTKLIB_PATH)/src/rcv/ublox.c \
     $(RTKLIB_PATH)/src/rcv/cmr.c \

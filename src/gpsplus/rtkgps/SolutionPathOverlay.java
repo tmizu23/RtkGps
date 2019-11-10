@@ -11,15 +11,13 @@ import gpsplus.rtklib.RtkCommon;
 import gpsplus.rtklib.RtkCommon.Position3d;
 import gpsplus.rtklib.Solution;
 import gpsplus.rtklib.constants.SolutionStatus;
-import microsoft.mappoint.TileSystem;
 
-import org.osmdroid.ResourceProxy;
-import org.osmdroid.util.BoundingBoxE6;
+import org.osmdroid.util.PointL;
+import org.osmdroid.util.BoundingBox;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
 import org.osmdroid.views.drawing.OsmPath;
-import org.osmdroid.views.overlay.PathOverlay;
-import org.osmdroid.views.util.constants.MapViewConstants;
+import org.osmdroid.views.overlay.Overlay;
 
 /**
  *
@@ -28,14 +26,14 @@ import org.osmdroid.views.util.constants.MapViewConstants;
  *
  *         This class draws a path line in given color.
  */
-public class SolutionPathOverlay extends PathOverlay {
+public class SolutionPathOverlay extends Overlay {
 
     private static final int DEFAULT_SIZE = 1000;
     private static final int PATH_COLOR = Color.GRAY;
 
-
-    private final int[] mProjectedX;
-    private final int[] mProjectedY;
+	private final Projection mPj;
+    private final long[] mProjectedX;
+    private final long[] mProjectedY;
 	private final SolutionStatus[] mPointSolutionStatus;
 
 	private int mBufHead;
@@ -49,19 +47,18 @@ public class SolutionPathOverlay extends PathOverlay {
 
 	private final OsmPath mPath;
 
-
-	public SolutionPathOverlay(final ResourceProxy pResourceProxy) {
-	    this(DEFAULT_SIZE, pResourceProxy);
+	public SolutionPathOverlay(Projection pj) {
+		this(DEFAULT_SIZE, pj);
 	}
 
-	public SolutionPathOverlay(final int size, final ResourceProxy pResourceProxy) {
-		super(PATH_COLOR,pResourceProxy);
-
+	public SolutionPathOverlay(final int size,Projection pj) {
+		super();
+		this.mPj = pj;
 	    this.mPaint = new Paint();
 	    this.mPointPaint = new Paint();
 	    this.mPath = new OsmPath();
-		this.mProjectedX = new int[size];
-		this.mProjectedY = new int[size];
+		this.mProjectedX = new long[size];
+		this.mProjectedY = new long[size];
 		this.mPointSolutionStatus = new SolutionStatus[size];
 		this.mBufHead = 0;
 		this.mBufSize = 0;
@@ -100,7 +97,6 @@ public class SolutionPathOverlay extends PathOverlay {
 	    final Position3d pos;
 	    final double lat, lon;
 	    final int tail;
-
 	    if (solution.getSolutionStatus() == SolutionStatus.NONE) {
 	        return false;
 	    }
@@ -112,11 +108,9 @@ public class SolutionPathOverlay extends PathOverlay {
 	    mPointSolutionStatus[tail] = solution.getSolutionStatus();
 
 	    // Performs the first computationally heavy part of the projection.
-	    final Point projected = TileSystem.LatLongToPixelXY(lat,
-	            lon, MapViewConstants.MAXIMUM_ZOOMLEVEL, null);
+	    final PointL projected = mPj.toProjectedPixels(lat,lon,null);
         mProjectedX[tail] = projected.x;
         mProjectedY[tail] = projected.y;
-
 	    if (isBufFull()) {
 	        mBufHead = (mBufHead + 1) % getSize();
 	    }else {
@@ -161,12 +155,12 @@ public class SolutionPathOverlay extends PathOverlay {
 	 * Should be fine up to 10K points.
 	 */
     @Override
-    protected void draw(Canvas canvas, MapView osmv, boolean shadow) {
+    public void draw(Canvas canvas, MapView osmv, boolean shadow) {
         final Projection pj;
         final Rect clipBounds, lineBounds;
         Point screenPoint0, screenPoint1;
         Point tempPoint0, tempPoint1;
-        final Point projectedPoint0, projectedPoint1;
+        final PointL projectedPoint0, projectedPoint1;
         int bufIdx;
 
         if (shadow) {
@@ -181,17 +175,17 @@ public class SolutionPathOverlay extends PathOverlay {
         pj = osmv.getProjection();
 
         // clipping rectangle in the intermediate projection, to avoid performing projection.
-        BoundingBoxE6 boundingBox = pj.getBoundingBox();
-        Point topLeft = pj.toProjectedPixels(boundingBox.getLatNorthE6(),
-                boundingBox.getLonWestE6(), null);
-        Point bottomRight = pj.toProjectedPixels(boundingBox.getLatSouthE6(),
-                boundingBox.getLonEastE6(), null);
-        clipBounds = new Rect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
+        BoundingBox boundingBox = pj.getBoundingBox();
+        PointL topLeft = pj.toProjectedPixels(boundingBox.getLatNorth(),
+                boundingBox.getLonWest(), null);
+        PointL bottomRight = pj.toProjectedPixels(boundingBox.getLatSouth(),
+                boundingBox.getLonEast(), null);
+        clipBounds = new Rect((int)topLeft.x, (int)topLeft.y, (int)bottomRight.x,(int)bottomRight.y);
 
         screenPoint0 = null;
         screenPoint1 = null;
-        projectedPoint0 = new Point();
-        projectedPoint1 = new Point();
+        projectedPoint0 = new PointL();
+        projectedPoint1 = new PointL();
         tempPoint0 = new Point();
         tempPoint1 = new Point();
 
@@ -199,13 +193,13 @@ public class SolutionPathOverlay extends PathOverlay {
 
         bufIdx = (mBufHead + mBufSize - 1) % getSize();
         projectedPoint0.set(mProjectedX[bufIdx], mProjectedY[bufIdx]);
-        lineBounds = new Rect(projectedPoint0.x, projectedPoint0.y, projectedPoint0.x, projectedPoint0.y);
+        lineBounds = new Rect((int)projectedPoint0.x,(int)projectedPoint0.y, (int)projectedPoint0.x,(int)projectedPoint0.y);
 
         for (int i = mBufSize - 2; i >= 0; i--) {
             bufIdx = (mBufHead + i) % getSize();
 
             // compute next points
-            lineBounds.union(mProjectedX[bufIdx], mProjectedY[bufIdx]);
+            lineBounds.union((int)mProjectedX[bufIdx], (int)mProjectedY[bufIdx]);
             if (!Rect.intersects(clipBounds, lineBounds)) {
                 // skip this line, move to next point
                 projectedPoint0.set(mProjectedX[bufIdx], mProjectedY[bufIdx]);
@@ -237,7 +231,7 @@ public class SolutionPathOverlay extends PathOverlay {
             // update starting point to next position
             projectedPoint0.set(projectedPoint1.x, projectedPoint1.y);
             screenPoint0.set(screenPoint1.x, screenPoint1.y);
-            lineBounds.set(projectedPoint0.x, projectedPoint0.y, projectedPoint0.x, projectedPoint0.y);
+            lineBounds.set((int)projectedPoint0.x,(int)projectedPoint0.y,(int)projectedPoint0.x,(int)projectedPoint0.y);
         }
 
         canvas.drawPath(mPath, this.mPaint);

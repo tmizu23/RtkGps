@@ -20,8 +20,6 @@ import android.view.ViewGroup;
 
 import butterknife.ButterKnife;
 import butterknife.BindView;
-import gpsplus.rtkgps.geoportail.GeoportailLayer;
-import gpsplus.rtkgps.geoportail.GeoportailWMTSTileSource;
 import gpsplus.rtkgps.view.GTimeView;
 import gpsplus.rtkgps.view.SolutionView;
 import gpsplus.rtkgps.view.StreamIndicatorsView;
@@ -32,9 +30,9 @@ import gpsplus.rtklib.RtkServerStreamStatus;
 import gpsplus.rtklib.Solution;
 import gpsplus.rtklib.constants.SolutionStatus;
 
-import org.osmdroid.ResourceProxy;
-import org.osmdroid.tileprovider.MapTileProviderBase;
+import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.tileprovider.tilesource.bing.BingMapTileSource;
 import org.osmdroid.views.MapView;
@@ -65,16 +63,13 @@ public class MapFragment extends Fragment {
 
     private Timer mStreamStatusUpdateTimer;
     private RtkServerStreamStatus mStreamStatus;
-    private ResourceProxy mResourceProxy;
 
+    final ITileSource mGSITileSource = new XYTileSource("GSI",3,18, 256, ".png", new String[] { "https://cyberjapandata.gsi.go.jp/xyz/std/" });
     private BingMapTileSource mBingRoadTileSource, mBingAerialTileSource;
     private SolutionPathOverlay mPathOverlay;
     private MyLocationNewOverlay mMyLocationOverlay;
     private CompassOverlay mCompassOverlay;
     private ScaleBarOverlay mScaleBarOverlay;
-    private GeoportailWMTSTileSource mGeoportailCadastralTileSource;
-    private GeoportailWMTSTileSource mGeoportailMapTileSource;
-    private GeoportailWMTSTileSource mGeoportailOrthoimageTileSource;
 
     private RtkControlResult mRtkStatus;
 
@@ -84,7 +79,6 @@ public class MapFragment extends Fragment {
     @BindView(R.id.solutionView) SolutionView mSolutionView;
 
     private MapView mMapView;
-    private MapTileProviderBase mGeoportailTileProvider;
 
 
     public MapFragment() {
@@ -96,21 +90,18 @@ public class MapFragment extends Fragment {
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        mResourceProxy = new ResourceProxyImpl(activity.getApplicationContext());
         BingMapTileSource.retrieveBingKey(activity);
         mBingRoadTileSource = new BingMapTileSource(null);
         mBingRoadTileSource.setStyle(BingMapTileSource.IMAGERYSET_ROAD);
         mBingAerialTileSource = new BingMapTileSource(null);
         mBingAerialTileSource.setStyle(BingMapTileSource.IMAGERYSET_AERIAL);
-        mGeoportailCadastralTileSource = new GeoportailWMTSTileSource(null,GeoportailLayer.CADASTRALPARCELS);
-        mGeoportailMapTileSource = new GeoportailWMTSTileSource(null, GeoportailLayer.MAPS);
-        mGeoportailOrthoimageTileSource = new GeoportailWMTSTileSource(null, GeoportailLayer.ORTHOIMAGE);
     }
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Configuration.getInstance().setUserAgentValue(BuildConfig.APPLICATION_ID);
         setHasOptionsMenu(true);
     }
 
@@ -134,26 +125,20 @@ public class MapFragment extends Fragment {
         }else {
             actionBarHeight = 48;
         }
-//ON WORK
-        //modified provider for setting User-Agent to Android wich is mandatory for geoportail
-        //also trust all certificates for communicating via https
-        mGeoportailTileProvider = new org.osmdroid.tileprovider.modules.WMTSMapTileProviderBasic(inflater.getContext());
 
-        mMapView = new MapView(inflater.getContext(), 256, mResourceProxy,mGeoportailTileProvider);
+        mMapView = new MapView(context);
         mMapView.setBuiltInZoomControls(true);
         mMapView.setMultiTouchControls(true);
         mMapView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
-        mPathOverlay = new SolutionPathOverlay(mResourceProxy);
+        mPathOverlay = new SolutionPathOverlay(mMapView.getProjection());
 
-        mMyLocationOverlay = new MyLocationNewOverlay(context, mMyLocationProvider,
-                mMapView);
+        mMyLocationOverlay = new MyLocationNewOverlay(mMyLocationProvider, mMapView);
 
-        mCompassOverlay = new CompassOverlay(context, new InternalCompassOrientationProvider(context),
-                mMapView, mResourceProxy);
+        mCompassOverlay = new CompassOverlay(context, new InternalCompassOrientationProvider(context), mMapView);
         mCompassOverlay.setCompassCenter(25.0f * dm.density, actionBarHeight + 5.0f * dm.density);
 
-        mScaleBarOverlay = new ScaleBarOverlay(context);
+        mScaleBarOverlay = new ScaleBarOverlay(mMapView);
         mScaleBarOverlay.setCentred(true);
         mScaleBarOverlay.setScaleBarOffset(dm.widthPixels/2, (int)(actionBarHeight + 5.0f * dm.density));
 
@@ -215,12 +200,8 @@ public class MapFragment extends Fragment {
             checked = R.id.menu_map_mode_bing_aerial;
         }else if (MAP_MODE_BING_ROAD.equals(providerName)) {
             checked = R.id.menu_map_mode_bing_road;
-        }else if (GeoportailLayer.CADASTRALPARCELS.getLayer().equals(providerName)) {
-            checked = R.id.menu_map_mode_geoportail_cadastral;
-        }else if (GeoportailLayer.MAPS.getLayer().equals(providerName)) {
-            checked = R.id.menu_map_mode_geoportail_map;
-        }else if (GeoportailLayer.ORTHOIMAGE.getLayer().equals(providerName)) {
-            checked = R.id.menu_map_mode_geoportail_orthoimages;
+        }else if ("GSI".equals(providerName)) {
+            checked = R.id.menu_map_mode_gsi_std;
         }
         else {
             checked = R.id.menu_map_mode_osm;
@@ -241,7 +222,7 @@ public class MapFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
-        //mPathOverlay.clearPath();
+        mPathOverlay.clear();
         mStreamStatusUpdateTimer.cancel();
         mStreamStatusUpdateTimer = null;
     }
@@ -272,14 +253,8 @@ public class MapFragment extends Fragment {
         case R.id.menu_map_mode_bing_road:
             tileSource = MAP_MODE_BING_ROAD;
             break;
-        case R.id.menu_map_mode_geoportail_cadastral:
-            tileSource = GeoportailLayer.CADASTRALPARCELS.getLayer();
-            break;
-        case R.id.menu_map_mode_geoportail_orthoimages:
-            tileSource = GeoportailLayer.ORTHOIMAGE.getLayer();
-            break;
-        case R.id.menu_map_mode_geoportail_map:
-            tileSource = GeoportailLayer.MAPS.getLayer();
+        case R.id.menu_map_mode_gsi_std:
+            tileSource = "GSI";
             break;
         default:
             return super.onOptionsItemSelected(item);
@@ -353,12 +328,8 @@ public class MapFragment extends Fragment {
             tileSource = mBingAerialTileSource;
         }else if (MAP_MODE_BING_ROAD.equals(name)) {
             tileSource = mBingRoadTileSource;
-        }else if (GeoportailLayer.CADASTRALPARCELS.getLayer().equals(name)) {
-            tileSource = mGeoportailCadastralTileSource;
-        }else if (GeoportailLayer.MAPS.getLayer().equals(name)) {
-            tileSource = mGeoportailMapTileSource;
-        }else if (GeoportailLayer.ORTHOIMAGE.getLayer().equals(name)) {
-            tileSource = mGeoportailOrthoimageTileSource;
+        }else if ("GSI".equals(name)) {
+            tileSource = mGSITileSource;
         }else {
             try {
                 tileSource = TileSourceFactory.getTileSource(name);
@@ -415,6 +386,10 @@ public class MapFragment extends Fragment {
             return mLocationKnown ? mLastLocation : null;
         }
 
+        @Override
+        public void destroy(){
+
+        }
         private void setSolution(Solution s, boolean notifyConsumer) {
             Position3d pos;
             if (MainActivity.getDemoModeLocation().isInDemoMode() && RtkNaviService.mbStarted) {
@@ -450,5 +425,4 @@ public class MapFragment extends Fragment {
         }
 
     };
-
 }
