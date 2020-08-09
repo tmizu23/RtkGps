@@ -71,11 +71,10 @@ LOCAL_SRC_FILES += \
     $(RTKLIB_PATH)/src/rcv/rt17.c \
     $(RTKLIB_PATH)/src/rcv/septentrio.c \
     $(RTKLIB_PATH)/src/rcv/skytraq.c \
-    $(RTKLIB_PATH)/src/rcv/swiftnav.c \
     $(RTKLIB_PATH)/src/rcv/ublox.c \
     $(RTKLIB_PATH)/src/rcv/cmr.c \
     $(RTKLIB_PATH)/src/rcv/tersus.c \
-    $(RTKLIB_PATH)/src/rcv/comnav.c \
+    $(RTKLIB_PATH)/src/rcv/ss2.c \
 LOCAL_SRC_FILES += log.c
 
 #

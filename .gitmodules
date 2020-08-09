@@ -3,4 +3,5 @@
 	url = git://github.com/simonlynen/android_libs.git
 [submodule "jni/RTKLIB"]
 	path = jni/RTKLIB
-	url = https://github.com/rtklibexplorer/RTKLIB.git
+	url = https://github.com/tomojitakasu/RTKLIB.git
+	branch = rtklib_2.4.3

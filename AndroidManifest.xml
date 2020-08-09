@@ -4,9 +4,7 @@
     android:versionCode="26"
     android:versionName="1.0 Alpha 26" >
 
-    <uses-sdk
-        android:minSdkVersion="18"
-        android:targetSdkVersion="18" />
+    <uses-sdk />
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
