@@ -16,4 +16,5 @@ https://github.com/tmizu23/RtkGps/releases/download/0.2/RtkGps-release.apk
 
 ### メモ
 http://tmizu23.hatenablog.com/entry/2020/08/09/100146
+
 http://tmizu23.hatenablog.com/entry/2019/10/28/205553
