@@ -47,3 +47,5 @@ libs/armeabi/gdbserver
 libs/mips/gdbserver
 
 libs/x86/gdbserver
+
+keystore.properties

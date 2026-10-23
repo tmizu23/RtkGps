@@ -96,7 +96,26 @@ android {
     buildFeatures {
         buildConfig true
     }
+    // Release signing is read from keystore.properties (not in git) when present
+    def keystorePropertiesFile = rootProject.file('keystore.properties')
+    if (keystorePropertiesFile.exists()) {
+        def keystoreProperties = new Properties()
+        keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+        signingConfigs {
+            release {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
         debug {
             debuggable true
             jniDebuggable false
