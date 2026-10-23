@@ -19,6 +19,27 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.2'
 }
 
+// USB / Bluetooth streams reach RTKLIB through a unix domain socket (STR_UNIXSVR),
+// which upstream RTKLIB lacks; patch the submodule before the native build
+def rtklibPatches = ['jni/RTKLIB-unixsocket.patch']
+tasks.register('patchRtklib') {
+    inputs.files(rtklibPatches)
+    doLast {
+        def rtklibDir = file('jni/RTKLIB')
+        rtklibPatches.each { p ->
+            def patch = file(p).absolutePath
+            def applied = ['git', 'apply', '--reverse', '--check', patch].execute(null, rtklibDir).waitFor() == 0
+            if (!applied) {
+                def proc = ['git', 'apply', patch].execute(null, rtklibDir)
+                def err = proc.err.text
+                if (proc.waitFor() != 0) throw new GradleException("Failed to apply ${p}: ${err}")
+                logger.lifecycle("Applied ${p} to jni/RTKLIB")
+            }
+        }
+    }
+}
+preBuild.dependsOn patchRtklib
+
 android {
     namespace 'gpsplus.rtkgps'
     compileSdk 35
