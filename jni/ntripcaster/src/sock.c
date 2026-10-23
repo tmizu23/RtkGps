@@ -898,7 +898,7 @@ SOCKET sock_connect_wto(const char *hostname, const int port,
 			sock_close(sockfd);
 			return INVALID_SOCKET;
 		}
-		memcpy(&server.sin_addr, &sin.sin_addr, sizeof (sin));
+		memcpy(&server.sin_addr, &sin.sin_addr, sizeof (sin.sin_addr));
 	} else {
 		host =
 			ice_gethostbyname(hostname, &hostinfo, buf, BUFSIZE,

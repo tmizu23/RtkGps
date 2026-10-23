@@ -299,13 +299,17 @@ void processing_options2prcopt_t(JNIEnv* env, jobject thiz, prcopt_t *dst)
 
    {
       /* exsats */
-      int i;
+      int i, n;
       jboolean *j_bool_arr;
 
       jarr = GET_FIELD2(exsats, Object)
       j_bool_arr = (*env)->GetBooleanArrayElements(env, jarr, NULL);
       if (j_bool_arr == NULL) return;
-      for (i=0; i<sizeof(dst->exsats)/sizeof(dst->exsats[0]); ++i)
+      /* never read past the Java array if its MAXSAT differs from RTKLIB's */
+      n = (*env)->GetArrayLength(env, jarr);
+      if (n > (int)(sizeof(dst->exsats)/sizeof(dst->exsats[0])))
+	 n = sizeof(dst->exsats)/sizeof(dst->exsats[0]);
+      for (i=0; i<n; ++i)
 	 dst->exsats[i] = j_bool_arr[i] ? 1 : 2;
       (*env)->ReleaseBooleanArrayElements(env, jarr, j_bool_arr, 0);
    }
@@ -430,14 +434,18 @@ static void ProcessingOptions_load_defaults(JNIEnv* env, jobject thiz)
    SET_FIELD2(antdelRefU, Double, src->antdel[1][2])
    {
       /* exsats */
-      int i;
+      int i, n;
       jboolean *j_bool_arr;
 
       jarr = (*env)->GetObjectField(env, thiz, gpsplus_rtklib_prcopt_fields.exsats);
       j_bool_arr = (*env)->GetBooleanArrayElements(env, jarr, NULL);
       if (j_bool_arr == NULL) return;
 
-      for (i=0; i<(sizeof(src->exsats)/sizeof(src->exsats[0])); ++i)
+      /* never write past the Java array if its MAXSAT differs from RTKLIB's */
+      n = (*env)->GetArrayLength(env, jarr);
+      if (n > (int)(sizeof(src->exsats)/sizeof(src->exsats[0])))
+	 n = sizeof(src->exsats)/sizeof(src->exsats[0]);
+      for (i=0; i<n; ++i)
 	 j_bool_arr[i] = src->exsats[i] == 1 ? JNI_TRUE : JNI_FALSE;
       (*env)->ReleaseBooleanArrayElements(env, jarr, j_bool_arr, 0);
 

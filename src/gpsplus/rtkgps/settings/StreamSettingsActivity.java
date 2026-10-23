@@ -7,9 +7,9 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.support.v13.app.FragmentPagerAdapter;
-import android.support.v4.app.NavUtils;
-import android.support.v4.view.ViewPager;
+import androidx.legacy.app.FragmentPagerAdapter;
+import androidx.core.app.NavUtils;
+import androidx.viewpager.widget.ViewPager;
 import android.view.MenuItem;
 
 import gpsplus.rtkgps.R;

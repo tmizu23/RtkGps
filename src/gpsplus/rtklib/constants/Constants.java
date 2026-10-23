@@ -30,7 +30,7 @@ public class Constants {
     /** min satellite PRN number of QZSS */
     public final static int MINPRNQZS = 193;
     /** max satellite PRN number of QZSS */
-    public final static int MAXPRNQZS = 195;
+    public final static int MAXPRNQZS = 202;
     /** min satellite PRN number of QZSS SAIF */
     public final static int MINPRNQZS_S = 183;
     /** max satellite PRN number of QZSS SAIF */
@@ -41,7 +41,7 @@ public class Constants {
     /** min satellite sat number of BeiDou */
     public final static int MINPRNCMP = 1;
     /** max satellite sat number of BeiDou */
-    public final static int MAXPRNCMP = 35;
+    public final static int MAXPRNCMP = 37;
     /** number of Compass satellites */
     public final static int NSATCMP = MAXPRNCMP-MINPRNCMP+1;
 
@@ -52,6 +52,7 @@ public class Constants {
     /** number of SBAS satellites */
     public final static int NSATSBS = MAXPRNSBS-MINPRNSBS+1;
 
+    /** must match MAXSAT of the bundled RTKLIB (jni/RTKLIB/src/rtklib.h) */
     public final static int MAXSAT = NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATSBS;
 
     /** max number of solution buffer */

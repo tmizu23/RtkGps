@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.os.ConditionVariable;
 import android.util.Log;
 
@@ -250,8 +251,10 @@ public class UsbToRtklib {
 
         private void requestPermission(UsbDevice d) {
             if (DBG) Log.d(TAG, "requestPermission() device=" + d.toString());
+            // UsbManager adds extras to this intent, so it must be mutable on Android 12+
+            final Intent intent = new Intent(ACTION_USB_PERMISSION).setPackage(mContext.getPackageName());
             final PendingIntent premissionIntent = PendingIntent.getBroadcast(mContext,
-                    0, new Intent(ACTION_USB_PERMISSION), 0);
+                    0, intent, Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0);
             mUsbManager.requestPermission(d, premissionIntent);
         }
 

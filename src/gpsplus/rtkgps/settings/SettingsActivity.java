@@ -4,7 +4,7 @@ import java.util.List;
 
 import gpsplus.rtkgps.R;
 import android.preference.PreferenceActivity;
-import android.support.v4.app.NavUtils;
+import androidx.core.app.NavUtils;
 import android.view.MenuItem;
 
 public class SettingsActivity extends PreferenceActivity {

@@ -2,9 +2,10 @@ package gpsplus.rtkgps;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.IntentService;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -15,17 +16,17 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
-import butterknife.BindString;
 
 //import com.dropbox.sync.android.DbxAccountManager;
 //import com.dropbox.sync.android.DbxException;
@@ -35,9 +36,6 @@ import butterknife.BindString;
 //import com.dropbox.sync.android.DbxPath;
 //import com.dropbox.sync.android.DbxPath.InvalidPathException;
 
-import com.karumi.dexter.Dexter;
-import com.karumi.dexter.listener.single.DialogOnDeniedPermissionListener;
-import com.karumi.dexter.listener.single.PermissionListener;
 
 import gpsplus.rtkgps.settings.OutputGPXTraceFragment;
 import gpsplus.rtkgps.settings.ProcessingOptions1Fragment;
@@ -132,6 +130,7 @@ public class RtkNaviService extends IntentService implements LocationListener {
     private static final String GPS_PROVIDER = LocationManager.GPS_PROVIDER;
     private boolean mHavePoint = false;
     private int NOTIFICATION = R.string.local_service_started;
+    private static final String NOTIFICATION_CHANNEL_ID = "rtknavi_service";
     private RtkCommon rtkCommon;
 
     // Binder given to clients
@@ -155,8 +154,6 @@ public class RtkNaviService extends IntentService implements LocationListener {
     private long mLProcessingCycle = 5;
     private String mSessionCode;
     private Shapefile mShapefile;
-    @BindString(R.string.permission_to_use_gps_title) String permissionTitle;
-    @BindString(R.string.permission_to_use_gps) String permissionMessage;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -174,7 +171,7 @@ public class RtkNaviService extends IntentService implements LocationListener {
         } else {
             final String action = intent.getAction();
 
-            if (action.equals(ACTION_START)) {
+            if (ACTION_START.equals(action)) {
                 if (intent.hasExtra(EXTRA_SESSION_CODE)) {
                     mSessionCode = intent.getStringExtra(EXTRA_SESSION_CODE);
                 }
@@ -184,13 +181,13 @@ public class RtkNaviService extends IntentService implements LocationListener {
                 mShapefile = new Shapefile(MainActivity.getAndCheckSessionDirectory(mSessionCode),
                                             mSessionCode+".shp");
                 processStart();
-            } else if (action.equals(ACTION_STOP)) {
+            } else if (ACTION_STOP.equals(action)) {
                 processStop();
-                mShapefile.close();
+                if (mShapefile != null) mShapefile.close();
                 if (mHavePoint) {
                     createMapFile();
                 }
-            } else if (action.equals(ACTION_STORE_POINT))
+            } else if (ACTION_STORE_POINT.equals(action))
             {
                 if (intent.hasExtra(EXTRA_POINT_NAME))
                 {
@@ -387,7 +384,7 @@ public class RtkNaviService extends IntentService implements LocationListener {
         startUsb();
         startMobileMapper();
 
-        mCpuLock.acquire();
+        if (!mCpuLock.isHeld()) mCpuLock.acquire();
 
         Notification notification = createForegroundNotification();
         startForeground(NOTIFICATION, notification);
@@ -399,36 +396,36 @@ public class RtkNaviService extends IntentService implements LocationListener {
         prefs = this.getBaseContext().getSharedPreferences(ProcessingOptions1Fragment.SHARED_PREFS_NAME, 0);
         mLProcessingCycle = Long.valueOf(prefs.getString(ProcessingOptions1Fragment.KEY_PROCESSING_CYCLE, "5"));
         if (mBoolMockLocationsPref) {
-            if (Settings.Secure.getString(getContentResolver(),
-                    Settings.Secure.ALLOW_MOCK_LOCATION).equals("0")) {
+            // Since Android 6 ALLOW_MOCK_LOCATION is always "0"; the app must instead be selected
+            // as the mock location app in developer options, otherwise addTestProvider() throws SecurityException
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M && "0".equals(Settings.Secure.getString(getContentResolver(),
+                    Settings.Secure.ALLOW_MOCK_LOCATION))) {
                 Log.e(RTK_GPS_MOCK_LOC_SERVICE, "Mock Location is not allowed");
+                mBoolMockLocationsPref = false;
+            } else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // A service cannot request permissions; MainActivity asks for them on startup
+                Log.e(RTK_GPS_MOCK_LOC_SERVICE, "Mock Location needs ACCESS_FINE_LOCATION permission");
+                Toast.makeText(this, R.string.permission_to_use_gps, Toast.LENGTH_LONG).show();
+                mBoolMockLocationsPref = false;
             } else {
                 // Connect to Location Services
                 LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
                 try {
-                    locationManager.addTestProvider(GPS_PROVIDER, false, false,
-                            false, false, true, false, true, 0, Criteria.ACCURACY_FINE);
-                } catch (IllegalArgumentException e) {
-                    Log.e(RTK_GPS_MOCK_LOC_SERVICE, "Mock Location gps provider already exist");
-                }
-                locationManager.setTestProviderEnabled(GPS_PROVIDER, true);
-
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    PermissionListener dialogPermissionListener =
-                            DialogOnDeniedPermissionListener.Builder
-                                    .withContext(this)
-                                    .withTitle(permissionTitle)
-                                    .withMessage(permissionMessage)
-                                    .withButtonText(android.R.string.ok)
-                                    .build();
-                    Dexter.withActivity((Activity)this.getApplicationContext())
-                            .withPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                            .withListener(dialogPermissionListener).check();
-                }else {
+                    try {
+                        locationManager.addTestProvider(GPS_PROVIDER, false, false,
+                                false, false, true, false, true, 0, Criteria.ACCURACY_FINE);
+                    } catch (IllegalArgumentException e) {
+                        Log.e(RTK_GPS_MOCK_LOC_SERVICE, "Mock Location gps provider already exist");
+                    }
+                    locationManager.setTestProviderEnabled(GPS_PROVIDER, true);
                     locationManager.requestLocationUpdates(GPS_PROVIDER, 0, 0, this);
-                }
                     Log.i(RTK_GPS_MOCK_LOC_SERVICE,"Mock Location service was started");
+                } catch (SecurityException e) {
+                    Log.e(RTK_GPS_MOCK_LOC_SERVICE, "Mock Location is not allowed: select this app as mock location app in developer options", e);
+                    Toast.makeText(this, "Mock Location is not allowed: select RtkGps+ as mock location app in developer options", Toast.LENGTH_LONG).show();
+                    mBoolMockLocationsPref = false;
                 }
+            }
         }
         GeoidModel model = GeoidModel.valueOf( prefs.getString(SolutionOutputSettingsFragment.KEY_GEOID_MODEL,GeoidModel.EMBEDDED.name()) );
         rtkCommon = new RtkCommon(model);
@@ -627,16 +624,23 @@ public class RtkNaviService extends IntentService implements LocationListener {
         stop();
     }
 
-    @SuppressWarnings("deprecation")
     private Notification createForegroundNotification() {
         CharSequence text = getText(R.string.local_service_started);
+
+        // Since Android 8 a notification without a valid channel makes startForeground() fail
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                    getText(R.string.local_service_label), NotificationManager.IMPORTANCE_LOW);
+            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+        }
 
         // The PendingIntent to launch our activity if the user selects this
         // notification
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, MainActivity.class), 0);
+                new Intent(this, MainActivity.class),
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
         builder.setContentTitle(getText(R.string.local_service_label));
         builder.setContentText(text);
         builder.setContentIntent(contentIntent);
