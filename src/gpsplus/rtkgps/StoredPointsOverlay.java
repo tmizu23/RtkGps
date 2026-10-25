@@ -4,18 +4,21 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.view.MotionEvent;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
 import org.osmdroid.views.overlay.Overlay;
 
+import gpsplus.rtkgps.utils.PointStore;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Draws the points stored in the current session with their names,
- * so the surveyor can see which ground control points are already done.
+ * Draws the surveyed points with their names, so the surveyor can see
+ * which ground control points are already done. A long press selects a point.
  */
 public class StoredPointsOverlay extends Overlay {
 
@@ -26,7 +29,15 @@ public class StoredPointsOverlay extends Overlay {
 
     private final float mDensity;
     private final Paint mPointPaint, mOutlinePaint, mTextPaint, mTextHaloPaint;
-    private List<RtkNaviService.StoredPoint> mPoints = new ArrayList<RtkNaviService.StoredPoint>();
+    private static final float TOUCH_RADIUS_DP = 24.0f;
+
+    public interface OnPointLongPressListener {
+        void onPointLongPress(PointStore.Point point);
+    }
+
+    private List<PointStore.Point> mPoints = new ArrayList<PointStore.Point>();
+    private int mVersion = -1;
+    private OnPointLongPressListener mListener;
     private final Point mScreenPoint = new Point();
 
     public StoredPointsOverlay(float density) {
@@ -52,11 +63,37 @@ public class StoredPointsOverlay extends Overlay {
         mTextHaloPaint.setStrokeWidth(3.0f * density);
     }
 
-    /** @return true if the points changed and the map needs redrawing */
-    public boolean setPoints(List<RtkNaviService.StoredPoint> points) {
-        final boolean changed = points.size() != mPoints.size();
-        mPoints = points;
-        return changed;
+    public void setOnPointLongPressListener(OnPointLongPressListener listener) {
+        mListener = listener;
+    }
+
+    /** Reloads the points from the store; @return true if they changed and the map needs redrawing */
+    public boolean update() {
+        final PointStore store = PointStore.get();
+        final int version = store.getVersion();
+        if (version == mVersion) return false;
+        mVersion = version;
+        mPoints = store.getPoints();
+        return true;
+    }
+
+    @Override
+    public boolean onLongPress(MotionEvent e, MapView mapView) {
+        if (mListener == null) return false;
+        final Projection pj = mapView.getProjection();
+        PointStore.Point nearest = null;
+        double nearestDist = TOUCH_RADIUS_DP * mDensity;
+        for (PointStore.Point p : mPoints) {
+            pj.toPixels(new GeoPoint(p.lat, p.lon), mScreenPoint);
+            final double dist = Math.hypot(mScreenPoint.x - e.getX(), mScreenPoint.y - e.getY());
+            if (dist <= nearestDist) {
+                nearest = p;
+                nearestDist = dist;
+            }
+        }
+        if (nearest == null) return false;
+        mListener.onPointLongPress(nearest);
+        return true;
     }
 
     @Override
@@ -66,7 +103,7 @@ public class StoredPointsOverlay extends Overlay {
         final Projection pj = osmv.getProjection();
         final float radius = 6.0f * mDensity;
 
-        for (RtkNaviService.StoredPoint p : mPoints) {
+        for (PointStore.Point p : mPoints) {
             pj.toPixels(new GeoPoint(p.lat, p.lon), mScreenPoint);
             canvas.drawCircle(mScreenPoint.x, mScreenPoint.y, radius, mPointPaint);
             canvas.drawCircle(mScreenPoint.x, mScreenPoint.y, radius, mOutlinePaint);

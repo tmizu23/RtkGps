@@ -3,8 +3,10 @@ package gpsplus.rtkgps;
 import static junit.framework.Assert.assertNotNull;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
@@ -20,6 +22,7 @@ import android.view.ViewGroup;
 
 import butterknife.ButterKnife;
 import butterknife.BindView;
+import gpsplus.rtkgps.utils.PointStore;
 import gpsplus.rtkgps.view.GTimeView;
 import gpsplus.rtkgps.view.SolutionView;
 import gpsplus.rtkgps.view.StreamIndicatorsView;
@@ -135,6 +138,23 @@ public class MapFragment extends Fragment {
         mPathOverlay = new SolutionPathOverlay(mMapView.getProjection());
 
         mStoredPointsOverlay = new StoredPointsOverlay(dm.density);
+        mStoredPointsOverlay.update();
+        mStoredPointsOverlay.setOnPointLongPressListener(new StoredPointsOverlay.OnPointLongPressListener() {
+            @Override
+            public void onPointLongPress(final PointStore.Point point) {
+                new AlertDialog.Builder(getActivity())
+                    .setMessage(getString(R.string.point_delete_confirm, point.name))
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            PointStore.get().remove(point);
+                            refreshStoredPoints();
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            }
+        });
 
         mMyLocationOverlay = new MyLocationNewOverlay(mMyLocationProvider, mMapView);
 
@@ -261,6 +281,9 @@ public class MapFragment extends Fragment {
         case R.id.menu_map_mode_gsi_std:
             tileSource = "GSI";
             break;
+        case R.id.menu_clear_points:
+            confirmClearPoints();
+            return true;
         default:
             return super.onOptionsItemSelected(item);
         }
@@ -289,17 +312,38 @@ public class MapFragment extends Fragment {
             rtks.getRtkStatus(mRtkStatus);
             serverStatus = rtks.getServerStatus();
             appendSolutions(rtks.readSolutionBuffer());
-            if (mStoredPointsOverlay.setPoints(rtks.getStoredPoints())) {
-                mMapView.invalidate();
-            }
             mMyLocationProvider.setStatus(mRtkStatus, !mMapView.isAnimating());
             mGTimeView.setTime(mRtkStatus.getSolution().getTime());
             mSolutionView.setStats(mRtkStatus);
         }
 
+        // Points are kept by the store, so they show with the server stopped too
+        refreshStoredPoints();
+
         assertNotNull(mStreamStatus.mMsg);
 
         mStreamIndicatorsView.setStats(mStreamStatus, serverStatus);
+    }
+
+    private void refreshStoredPoints() {
+        if (mStoredPointsOverlay != null && mStoredPointsOverlay.update()) {
+            mMapView.invalidate();
+        }
+    }
+
+    private void confirmClearPoints() {
+        new AlertDialog.Builder(getActivity())
+            .setTitle(R.string.menu_clear_points)
+            .setMessage(R.string.points_clear_confirm)
+            .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    PointStore.get().clear();
+                    refreshStoredPoints();
+                }
+            })
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
     }
 
     private void saveMapPreferences() {

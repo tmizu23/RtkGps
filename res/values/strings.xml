@@ -851,6 +851,9 @@
     <string name="permission_to_use_gps_title">GPS permission</string>
     <string name="point_name_input_title">Point name</string>
     <string name="point_averaging_started">%1$s: averaging FIX solutions for %2$d s, keep the antenna still</string>
+    <string name="point_delete_confirm">Delete %1$s?</string>
+    <string name="menu_clear_points">Clear points</string>
+    <string name="points_clear_confirm">Remove all points from the map? The current points.geojson and points.csv are kept under a dated name.</string>
     <string name="point_averaging_busy">A point is already being averaged</string>
     <string name="point_averaging_no_fix">%1$s NOT stored: only %2$d FIX of %3$d epochs</string>
     <string name="point_averaging_stored">%1$s stored: %2$d FIX of %3$d epochs, sd H %4$.1f cm V %5$.1f cm</string>

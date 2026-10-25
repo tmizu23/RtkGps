@@ -49,6 +49,7 @@ import gpsplus.rtkgps.settings.SettingsActivity;
 import gpsplus.rtkgps.settings.SettingsHelper;
 import gpsplus.rtkgps.settings.SolutionOutputSettingsFragment;
 import gpsplus.rtkgps.settings.StreamSettingsActivity;
+import gpsplus.rtkgps.utils.PointStore;
 import gpsplus.rtkgps.utils.ChangeLog;
 import gpsplus.rtkgps.utils.GpsTime;
 
@@ -348,7 +349,8 @@ public class MainActivity extends Activity implements OnSharedPreferenceChangeLi
 
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT );
-        input.setText(nextPointName(m_PointName));
+        final String lastName = PointStore.get().getLastName();
+        input.setText(nextPointName(lastName != null ? lastName : m_PointName));
         input.selectAll();
         builder.setView(input);
 

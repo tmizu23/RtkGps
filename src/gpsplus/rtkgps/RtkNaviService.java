@@ -49,7 +49,7 @@ import gpsplus.rtkgps.settings.StreamUsbFragment;
 import gpsplus.rtkgps.utils.GpsTime;
 import gpsplus.rtkgps.utils.PreciseEphemerisDownloader;
 import gpsplus.rtkgps.utils.PreciseEphemerisProvider;
-import gpsplus.rtkgps.utils.GeoJsonPoints;
+import gpsplus.rtkgps.utils.PointStore;
 import gpsplus.rtklib.RtkCommon;
 import gpsplus.rtklib.RtkCommon.Position3d;
 import gpsplus.rtklib.RtkControlResult;
@@ -69,8 +69,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 public class RtkNaviService extends IntentService implements LocationListener {
@@ -157,7 +155,6 @@ public class RtkNaviService extends IntentService implements LocationListener {
     private GPXTrace mGpxTrace = null;
     private long mLProcessingCycle = 5;
     private String mSessionCode;
-    private GeoJsonPoints mGeoJsonPoints;
 
     private static final int POINT_AVERAGING_SECONDS = 30;
     private static final int POINT_MIN_FIX_EPOCHS = 10;
@@ -165,18 +162,6 @@ public class RtkNaviService extends IntentService implements LocationListener {
     private static final double EARTH_RADIUS = 6378137.0;
     private final Handler mPointHandler = new Handler(Looper.getMainLooper());
     private PointAverager mPointAverager = null;
-    private final List<StoredPoint> mStoredPoints = new ArrayList<StoredPoint>();
-
-    public static class StoredPoint {
-        public final String name;
-        public final double lat, lon;
-
-        StoredPoint(String name, double lat, double lon) {
-            this.name = name;
-            this.lat = lat;
-            this.lon = lon;
-        }
-    }
     @Override
     public void onCreate() {
         super.onCreate();
@@ -201,11 +186,6 @@ public class RtkNaviService extends IntentService implements LocationListener {
                 else {
                     mSessionCode = String.valueOf(System.currentTimeMillis());
                 }
-                synchronized (mStoredPoints) {
-                    mStoredPoints.clear();
-                }
-                mGeoJsonPoints = new GeoJsonPoints(MainActivity.getAndCheckSessionDirectory(mSessionCode),
-                                            mSessionCode+".geojson");
                 processStart();
             } else if (ACTION_STOP.equals(action)) {
                 cancelPointAveraging();
@@ -274,13 +254,6 @@ public class RtkNaviService extends IntentService implements LocationListener {
 
     public int getServerStatus() {
         return mRtkServer.getStatus();
-    }
-
-    /** Points stored in the current session, in degrees, for the map */
-    public List<StoredPoint> getStoredPoints() {
-        synchronized (mStoredPoints) {
-            return new ArrayList<StoredPoint>(mStoredPoints);
-        }
     }
 
     public Solution[] readSolutionBuffer() {
@@ -436,29 +409,9 @@ public class RtkNaviService extends IntentService implements LocationListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // The .crw keeps 6 decimals for MobileMapper; the csv keeps full precision for surveying
-        try {
-            File csvFile = new File(szSessionDirectory + File.separator + mSessionCode + "_points.csv");
-            boolean isNew = !csvFile.exists();
-            BufferedWriter out = new BufferedWriter(new FileWriter(csvFile, true));
-            if (isNew) {
-                out.write("name,lat_deg,lon_deg,ellipsoidal_height_m,sdN_m,sdE_m,sdU_m,nFix,nSat,gps_week,gps_tow\n");
-            }
-            out.write(String.format(Locale.ROOT, "%s,%.9f,%.9f,%.4f,%.4f,%.4f,%.4f,%d,%d,%s,%s\n",
-                    pointName.replace(',', ' '), dLat, dLon, height, sdN, sdE, sdU, nbFix, nbSat,
-                    gpsTime.getStringGpsWeek(), gpsTime.getStringGpsTOW()));
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        synchronized (mStoredPoints) {
-            mStoredPoints.add(new StoredPoint(pointName, dLat, dLon));
-        }
-        if (mGeoJsonPoints != null){
-            mGeoJsonPoints.addPoint(pointName,dLon, dLat,height, sdN, sdE, sdU,
-                    gpsTime.getGpsWeek(),(long)gpsTime.getSecondsOfWeek(),
-                    nbSat, nbFix);
-        }
+        // The .crw keeps 6 decimals for MobileMapper; the point store keeps full precision
+        PointStore.get().add(new PointStore.Point(pointName, dLat, dLon, height, sdN, sdE, sdU,
+                nbFix, nbSat, gpsTime.getGpsWeek(), (long)gpsTime.getSecondsOfWeek()));
     }
 
     /**

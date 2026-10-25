@@ -28,6 +28,11 @@
         	</menu>
         </item>            
     </item>
+    <item
+        android:id="@+id/menu_clear_points"
+        android:showAsAction="never"
+        android:title="@string/menu_clear_points"
+        android:orderInCategory="151" />
 	
 
 </menu>
