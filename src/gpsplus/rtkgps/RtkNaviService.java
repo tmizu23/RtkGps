@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -48,7 +49,7 @@ import gpsplus.rtkgps.settings.StreamUsbFragment;
 import gpsplus.rtkgps.utils.GpsTime;
 import gpsplus.rtkgps.utils.PreciseEphemerisDownloader;
 import gpsplus.rtkgps.utils.PreciseEphemerisProvider;
-import gpsplus.rtkgps.utils.Shapefile;
+import gpsplus.rtkgps.utils.GeoJsonPoints;
 import gpsplus.rtklib.RtkCommon;
 import gpsplus.rtklib.RtkCommon.Position3d;
 import gpsplus.rtklib.RtkControlResult;
@@ -60,6 +61,7 @@ import gpsplus.rtklib.RtkServerStreamStatus;
 import gpsplus.rtklib.Solution;
 import gpsplus.rtklib.constants.EphemerisOption;
 import gpsplus.rtklib.constants.GeoidModel;
+import gpsplus.rtklib.constants.SolutionStatus;
 import gpsplus.rtklib.constants.StreamType;
 
 import java.io.BufferedWriter;
@@ -67,6 +69,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class RtkNaviService extends IntentService implements LocationListener {
@@ -153,7 +157,26 @@ public class RtkNaviService extends IntentService implements LocationListener {
     private GPXTrace mGpxTrace = null;
     private long mLProcessingCycle = 5;
     private String mSessionCode;
-    private Shapefile mShapefile;
+    private GeoJsonPoints mGeoJsonPoints;
+
+    private static final int POINT_AVERAGING_SECONDS = 30;
+    private static final int POINT_MIN_FIX_EPOCHS = 10;
+    private static final long POINT_SAMPLING_MS = 200;
+    private static final double EARTH_RADIUS = 6378137.0;
+    private final Handler mPointHandler = new Handler(Looper.getMainLooper());
+    private PointAverager mPointAverager = null;
+    private final List<StoredPoint> mStoredPoints = new ArrayList<StoredPoint>();
+
+    public static class StoredPoint {
+        public final String name;
+        public final double lat, lon;
+
+        StoredPoint(String name, double lat, double lon) {
+            this.name = name;
+            this.lat = lat;
+            this.lon = lon;
+        }
+    }
     @Override
     public void onCreate() {
         super.onCreate();
@@ -178,12 +201,15 @@ public class RtkNaviService extends IntentService implements LocationListener {
                 else {
                     mSessionCode = String.valueOf(System.currentTimeMillis());
                 }
-                mShapefile = new Shapefile(MainActivity.getAndCheckSessionDirectory(mSessionCode),
-                                            mSessionCode+".shp");
+                synchronized (mStoredPoints) {
+                    mStoredPoints.clear();
+                }
+                mGeoJsonPoints = new GeoJsonPoints(MainActivity.getAndCheckSessionDirectory(mSessionCode),
+                                            mSessionCode+".geojson");
                 processStart();
             } else if (ACTION_STOP.equals(action)) {
+                cancelPointAveraging();
                 processStop();
-                if (mShapefile != null) mShapefile.close();
                 if (mHavePoint) {
                     createMapFile();
                 }
@@ -193,7 +219,7 @@ public class RtkNaviService extends IntentService implements LocationListener {
                 {
                     m_pointName = intent.getStringExtra(EXTRA_POINT_NAME);
                 }
-                addPointToCRW(m_pointName);
+                storePoint(m_pointName);
             }
             else Log.e(TAG, "onStartCommand(): unknown action " + action);
         }
@@ -250,6 +276,13 @@ public class RtkNaviService extends IntentService implements LocationListener {
         return mRtkServer.getStatus();
     }
 
+    /** Points stored in the current session, in degrees, for the map */
+    public List<StoredPoint> getStoredPoints() {
+        synchronized (mStoredPoints) {
+            return new ArrayList<StoredPoint>(mStoredPoints);
+        }
+    }
+
     public Solution[] readSolutionBuffer() {
         return mRtkServer.readSolutionBuffer();
     }
@@ -257,7 +290,7 @@ public class RtkNaviService extends IntentService implements LocationListener {
     private void createMapFile() {
         try {
             String sessionDirectory = MainActivity.getAndCheckSessionDirectory(mSessionCode);
-            File mapFile = new File(sessionDirectory + File.separator + mSessionCode + ".map\r\n");
+            File mapFile = new File(sessionDirectory + File.separator + mSessionCode + ".map");
             if (!mapFile.exists()) {
                 mapFile.createNewFile();
             }
@@ -273,44 +306,123 @@ public class RtkNaviService extends IntentService implements LocationListener {
 
     }
 
-    private void addPointToCRW(String pointName) {
-        double lat, lon, height, dLat, dLon;
-        double Qe[] = new double[9];
-        Position3d roverPos;
-        int nbSat = 0;
+    private void storePoint(String pointName) {
+        if (MainActivity.getDemoModeLocation().isInDemoMode()) {
+            DemoModeLocation demoModeLocation = MainActivity.getDemoModeLocation();
+            Position3d roverPos = demoModeLocation.getPosition();
+            addPointToCRW(pointName, roverPos.getLat(), roverPos.getLon(), roverPos.getHeight(),
+                    demoModeLocation.getNAccuracy(), demoModeLocation.getEAccuracy(),
+                    demoModeLocation.getVAccuracy(), demoModeLocation.getNbSat(), 0);
+            return;
+        }
+        if (mPointAverager != null) {
+            Toast.makeText(this, R.string.point_averaging_busy, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Log.i(TAG, "Averaging point " + pointName);
+        mPointAverager = new PointAverager(pointName);
+        Toast.makeText(this, getString(R.string.point_averaging_started, pointName,
+                POINT_AVERAGING_SECONDS), Toast.LENGTH_LONG).show();
+        mPointHandler.post(mPointAverager);
+    }
+
+    private void cancelPointAveraging() {
+        if (mPointAverager != null) {
+            mPointHandler.removeCallbacks(mPointAverager);
+            mPointAverager = null;
+        }
+    }
+
+    /**
+     * Averages the FIX solutions over POINT_AVERAGING_SECONDS so a ground control
+     * point is not taken from a single epoch
+     */
+    private class PointAverager implements Runnable {
+        private final String mName;
+        private final long mEndTime;
+        private final RtkControlResult mResult = new RtkControlResult();
+        private long mLastSolutionTime = -1;
+        private int mNbEpochs = 0, mNbFix = 0, mNbSat = 0;
+        private double mLat0, mLon0, mHeight0;
+        // Sums of offsets from the first FIX epoch, in metres (north, east, up)
+        private double mSumN, mSumE, mSumU, mSumN2, mSumE2, mSumU2;
+
+        PointAverager(String name) {
+            mName = name;
+            mEndTime = SystemClock.elapsedRealtime() + POINT_AVERAGING_SECONDS * 1000L;
+        }
+
+        @Override
+        public void run() {
+            Solution solution = getRtkStatus(mResult).getSolution();
+            long solutionTime = solution.getTime().getGpsTimeMillis();
+            if (solutionTime != mLastSolutionTime
+                    && RtkCommon.norm(solution.getPosition().getValues()) > 0.0) {
+                mLastSolutionTime = solutionTime;
+                mNbEpochs++;
+                if (solution.getSolutionStatus() == SolutionStatus.FIX) {
+                    addFix(RtkCommon.ecef2pos(solution.getPosition()), solution.getNs());
+                }
+            }
+            if (SystemClock.elapsedRealtime() < mEndTime) {
+                mPointHandler.postDelayed(this, POINT_SAMPLING_MS);
+            } else {
+                mPointAverager = null;
+                finish();
+            }
+        }
+
+        private void addFix(Position3d pos, int nbSat) {
+            if (mNbFix == 0) {
+                mLat0 = pos.getLat();
+                mLon0 = pos.getLon();
+                mHeight0 = pos.getHeight();
+            }
+            double n = (pos.getLat() - mLat0) * EARTH_RADIUS;
+            double e = (pos.getLon() - mLon0) * EARTH_RADIUS * Math.cos(mLat0);
+            double u = pos.getHeight() - mHeight0;
+            mSumN += n; mSumE += e; mSumU += u;
+            mSumN2 += n * n; mSumE2 += e * e; mSumU2 += u * u;
+            mNbFix++;
+            mNbSat = nbSat;
+        }
+
+        private double stdDev(double sum, double sum2) {
+            double mean = sum / mNbFix;
+            return Math.sqrt(Math.max(0.0, sum2 / mNbFix - mean * mean));
+        }
+
+        private void finish() {
+            Log.i(TAG, "Point " + mName + ": " + mNbFix + " FIX of " + mNbEpochs + " epochs");
+            if (mNbFix < POINT_MIN_FIX_EPOCHS) {
+                Toast.makeText(RtkNaviService.this, getString(R.string.point_averaging_no_fix,
+                        mName, mNbFix, mNbEpochs), Toast.LENGTH_LONG).show();
+                return;
+            }
+            double lat = mLat0 + mSumN / mNbFix / EARTH_RADIUS;
+            double lon = mLon0 + mSumE / mNbFix / (EARTH_RADIUS * Math.cos(mLat0));
+            double height = mHeight0 + mSumU / mNbFix;
+            double sdN = stdDev(mSumN, mSumN2);
+            double sdE = stdDev(mSumE, mSumE2);
+            double sdU = stdDev(mSumU, mSumU2);
+            addPointToCRW(mName, lat, lon, height, sdN, sdE, sdU, mNbSat, mNbFix);
+            Toast.makeText(RtkNaviService.this, getString(R.string.point_averaging_stored,
+                    mName, mNbFix, mNbEpochs, Math.max(sdN, sdE) * 100, sdU * 100),
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void addPointToCRW(String pointName, double lat, double lon, double height,
+                               double sdN, double sdE, double sdU, int nbSat, int nbFix) {
+        double dLat = Math.toDegrees(lat);
+        double dLon = Math.toDegrees(lon);
 
         GpsTime gpsTime = new GpsTime();
         gpsTime.setTime(System.currentTimeMillis());
 
-        if (MainActivity.getDemoModeLocation().isInDemoMode()) {
-            DemoModeLocation demoModeLocation = MainActivity.getDemoModeLocation();
-            nbSat = demoModeLocation.getNbSat();
-            Qe[4] = Math.pow(demoModeLocation.getNAccuracy(),2);
-            Qe[0] = Math.pow(demoModeLocation.getEAccuracy(),2);
-            Qe[8] = Math.pow(demoModeLocation.getVAccuracy(),2);
-            roverPos = demoModeLocation.getPosition();
-            lat = roverPos.getLat();
-            lon = roverPos.getLon();
-            dLat = Math.toDegrees(lat);
-            dLon = Math.toDegrees(lon);
-
-        }else {
-            Solution[] currentSolutions = readSolutionBuffer();
-            Solution currentSolution = currentSolutions[currentSolutions.length - 1];
-            RtkCommon.Matrix3x3 cov = currentSolution.getQrMatrix();
-            Position3d roverEcefPos = currentSolution.getPosition();
-            roverPos = RtkCommon.ecef2pos(roverEcefPos);
-            lat = roverPos.getLat();
-            lon = roverPos.getLon();
-            dLat = Math.toDegrees(lat);
-            dLon = Math.toDegrees(lon);
-            Qe = RtkCommon.covenu(lat, lon, cov).getValues();
-            nbSat = currentSolution.getNs();
-        }
-        height = roverPos.getHeight();
         String currentLine = String.format(Locale.ROOT,"%s,%s,%.6f,%.6f,%.3f,%d,%.3f,%.3f,%.1f\n", gpsTime.getStringGpsWeek(), gpsTime.getStringGpsTOW(), dLon, dLat, height, 10, 0D, 0D, 0D);
+        String szSessionDirectory = MainActivity.getAndCheckSessionDirectory(mSessionCode);
         try {
-            String szSessionDirectory = MainActivity.getAndCheckSessionDirectory(mSessionCode);
             File crwFile = new File(szSessionDirectory +File.separator+ mSessionCode+".crw");
             if (!crwFile.exists()) {
                 crwFile.createNewFile();
@@ -324,13 +436,28 @@ public class RtkNaviService extends IntentService implements LocationListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (mShapefile != null){
-            mShapefile.addPoint(pointName,dLon, dLat,height,
-                    Math.sqrt(Qe[4] < 0 ? 0 : Qe[4]),
-                    Math.sqrt(Qe[0] < 0 ? 0 : Qe[0]),
-                    Math.sqrt(Qe[8] < 0 ? 0 : Qe[8]),
+        // The .crw keeps 6 decimals for MobileMapper; the csv keeps full precision for surveying
+        try {
+            File csvFile = new File(szSessionDirectory + File.separator + mSessionCode + "_points.csv");
+            boolean isNew = !csvFile.exists();
+            BufferedWriter out = new BufferedWriter(new FileWriter(csvFile, true));
+            if (isNew) {
+                out.write("name,lat_deg,lon_deg,ellipsoidal_height_m,sdN_m,sdE_m,sdU_m,nFix,nSat,gps_week,gps_tow\n");
+            }
+            out.write(String.format(Locale.ROOT, "%s,%.9f,%.9f,%.4f,%.4f,%.4f,%.4f,%d,%d,%s,%s\n",
+                    pointName.replace(',', ' '), dLat, dLon, height, sdN, sdE, sdU, nbFix, nbSat,
+                    gpsTime.getStringGpsWeek(), gpsTime.getStringGpsTOW()));
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        synchronized (mStoredPoints) {
+            mStoredPoints.add(new StoredPoint(pointName, dLat, dLon));
+        }
+        if (mGeoJsonPoints != null){
+            mGeoJsonPoints.addPoint(pointName,dLon, dLat,height, sdN, sdE, sdU,
                     gpsTime.getGpsWeek(),(long)gpsTime.getSecondsOfWeek(),
-                    nbSat);
+                    nbSat, nbFix);
         }
     }
 
@@ -462,16 +589,12 @@ public class RtkNaviService extends IntentService implements LocationListener {
         if (mBoolGenerateGPXTrace && (mGpxTrace != null))
         {
             SharedPreferences prefs= this.getBaseContext().getSharedPreferences(OutputGPXTraceFragment.SHARED_PREFS_NAME, 0);
-//            if(prefs.getBoolean(OutputGPXTraceFragment.KEY_SYNCDROPBOX, false))
-//                {
-//                    String szFilename = prefs.getString(OutputGPXTraceFragment.KEY_FILENAME, "");
-//                    if (szFilename.length()>0)
-//                    {
-//                        String szPath = MainActivity.getFileStorageDirectory() + File.separator + szFilename;
-//                        mGpxTrace.writeFile(szPath);
-//                    }
-//
-//                }
+            String szFilename = prefs.getString(OutputGPXTraceFragment.KEY_FILENAME, "gpxtrace.gpx");
+            if (szFilename.length()>0)
+            {
+                String szPath = MainActivity.getFileStorageDirectory() + File.separator + szFilename;
+                mGpxTrace.writeFile(szPath);
+            }
         }
 
     }

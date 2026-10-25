@@ -67,6 +67,7 @@ public class MapFragment extends Fragment {
     final ITileSource mGSITileSource = new XYTileSource("GSI",3,18, 256, ".png", new String[] { "https://cyberjapandata.gsi.go.jp/xyz/std/" });
     private BingMapTileSource mBingRoadTileSource, mBingAerialTileSource;
     private SolutionPathOverlay mPathOverlay;
+    private StoredPointsOverlay mStoredPointsOverlay;
     private MyLocationNewOverlay mMyLocationOverlay;
     private CompassOverlay mCompassOverlay;
     private ScaleBarOverlay mScaleBarOverlay;
@@ -133,6 +134,8 @@ public class MapFragment extends Fragment {
 
         mPathOverlay = new SolutionPathOverlay(mMapView.getProjection());
 
+        mStoredPointsOverlay = new StoredPointsOverlay(dm.density);
+
         mMyLocationOverlay = new MyLocationNewOverlay(mMyLocationProvider, mMapView);
 
         mCompassOverlay = new CompassOverlay(context, new InternalCompassOrientationProvider(context), mMapView);
@@ -143,6 +146,7 @@ public class MapFragment extends Fragment {
         mScaleBarOverlay.setScaleBarOffset(dm.widthPixels/2, (int)(actionBarHeight + 5.0f * dm.density));
 
         mMapView.getOverlays().add(mPathOverlay);
+        mMapView.getOverlays().add(mStoredPointsOverlay);
         mMapView.getOverlays().add(mScaleBarOverlay);
         mMapView.getOverlays().add(mMyLocationOverlay);
         mMapView.getOverlays().add(mCompassOverlay);
@@ -232,6 +236,7 @@ public class MapFragment extends Fragment {
         super.onDestroyView();
         mMapView = null;
         mPathOverlay = null;
+        mStoredPointsOverlay = null;
         mMyLocationOverlay = null;
         mCompassOverlay = null;
         mScaleBarOverlay = null;
@@ -284,6 +289,9 @@ public class MapFragment extends Fragment {
             rtks.getRtkStatus(mRtkStatus);
             serverStatus = rtks.getServerStatus();
             appendSolutions(rtks.readSolutionBuffer());
+            if (mStoredPointsOverlay.setPoints(rtks.getStoredPoints())) {
+                mMapView.invalidate();
+            }
             mMyLocationProvider.setStatus(mRtkStatus, !mMapView.isAnimating());
             mGTimeView.setTime(mRtkStatus.getSolution().getTime());
             mSolutionView.setStats(mRtkStatus);

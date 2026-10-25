@@ -80,8 +80,7 @@ public class MainActivity extends Activity implements OnSharedPreferenceChangeLi
     boolean mRtkServiceBound = false;
     private static DemoModeLocation mDemoModeLocation;
     private String mSessionCode;
-    String m_PointName = "POINT";
-    boolean m_bRet_pointName = false;
+    String m_PointName = "GCP0";
 
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.navigation_drawer) View mNavDrawer;
@@ -339,7 +338,9 @@ public class MainActivity extends Activity implements OnSharedPreferenceChangeLi
         return true;
     }
 
-    private boolean askForPointName()
+    // The point is stored from the OK button: the dialog does not block, so its
+    // result cannot be returned to the caller
+    private void askToAddPointToCrw()
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this,R.style.PointNameAlertDialogStyle);
         builder.setTitle(R.string.point_name_input_title);
@@ -347,33 +348,45 @@ public class MainActivity extends Activity implements OnSharedPreferenceChangeLi
 
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT );
+        input.setText(nextPointName(m_PointName));
+        input.selectAll();
         builder.setView(input);
 
         builder.setPositiveButton(R.string.button_ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                 m_PointName = input.getText().toString();
-                 m_bRet_pointName = true;
+                 String name = input.getText().toString().trim();
+                 if (name.length() == 0) return;
+                 m_PointName = name;
+                 final Intent intent = new Intent(RtkNaviService.ACTION_STORE_POINT);
+                 intent.setClass(MainActivity.this, RtkNaviService.class);
+                 intent.putExtra(RtkNaviService.EXTRA_POINT_NAME, name);
+                 startService(intent);
             }
         });
         builder.setNegativeButton(R.string.button_cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                m_bRet_pointName = false;
                 dialog.cancel();
             }
         });
 
         builder.show();
-        return m_bRet_pointName;
     }
-    private void askToAddPointToCrw()
+
+    // Suggests the next name when walking from point to point: GCP1 -> GCP2
+    private static String nextPointName(String previous)
     {
-        if (askForPointName()) {
-            final Intent intent = new Intent(RtkNaviService.ACTION_STORE_POINT);
-            intent.setClass(this, RtkNaviService.class);
-            intent.putExtra(RtkNaviService.EXTRA_POINT_NAME, m_PointName);
-            startService(intent);
+        int i = previous.length();
+        while (i > 0 && Character.isDigit(previous.charAt(i - 1))) i--;
+        if (i == previous.length()) return previous;
+        String digits = previous.substring(i);
+        try {
+            String next = String.valueOf(Long.parseLong(digits) + 1);
+            while (next.length() < digits.length()) next = "0" + next;
+            return previous.substring(0, i) + next;
+        } catch (NumberFormatException e) {
+            return previous;
         }
     }
 
