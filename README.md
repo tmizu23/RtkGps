@@ -11,7 +11,7 @@ Forked from https://github.com/eltorio/RtkGps
 
 
 ### おためし用apk
-https://github.com/tmizu23/RtkGps/releases/download/0.8/RtkGps-release.apk
+https://github.com/tmizu23/RtkGps/releases/download/0.9/RtkGps-release.apk
 
 
 ### メモ
