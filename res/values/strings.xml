@@ -386,6 +386,9 @@
 
     <!-- implemented so far -->
     <string name="procopt_min_ratio_to_fix_ambiguity_title">Min ratio to fix ambiguity</string>
+    <string name="procopt_reset_recommended_title">Reset to recommended values</string>
+    <string name="procopt_reset_recommended_summary">Network RTK, dual frequency receiver: kinematic, GPS/GLO/GAL/QZS/BDS, mask 15°, continuous AR, ratio 3.0</string>
+    <string name="procopt_reset_recommended_confirm">Replace all processing options with the recommended values?</string>
     <string name="procopt_min_lock_to_fix_ambiguity_title">Min lock to fix ambiguity</string>
     <string name="procopt_min_elevation_to_fix_ambiguity_title">Min elevation to fix ambiguity</string>
 

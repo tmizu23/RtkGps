@@ -139,7 +139,8 @@ public class InputBaseFragment extends InputRoverFragment {
         if (needUpdate) {
             SharedPreferences.Editor e = prefs.edit();
             e
-            .putString(KEY_TRANSMIT_GPGGA_TO_BASE, "0")
+            // VRS casters need the rover position to generate corrections
+            .putString(KEY_TRANSMIT_GPGGA_TO_BASE, "2")
             .putString(KEY_TRANSMIT_GPGGA_LAT, "0.0")
             .putString(KEY_TRANSMIT_GPGGA_LON, "0.0")
             ;

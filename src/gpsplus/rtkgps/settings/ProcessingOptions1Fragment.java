@@ -2,12 +2,15 @@ package gpsplus.rtkgps.settings;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
+import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.text.TextUtils;
 import android.util.Log;
@@ -93,6 +96,7 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
 
 
     public static final String KEY_MIN_FIX_RATIO ="min_fix_ratio";
+    private static final String KEY_RESET_RECOMMENDED = "reset_recommended";
     public static final String KEY_MAX_POS_VAR ="max_pos_var";
     private static final String KEY_MIN_FIX_ELEVATION = "min_fix_elevation";
     private static final String KEY_MIN_HOLD_ELEVATION = "min_hold_elevation";
@@ -159,6 +163,13 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
 
         getPreferenceManager().setSharedPreferencesName(SHARED_PREFS_NAME);
         addPreferencesFromResource(R.xml.processing_options1);
+        findPreference(KEY_RESET_RECOMMENDED).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                confirmResetToRecommended();
+                return true;
+            }
+        });
 
         initSettings1();
     }
@@ -586,10 +597,11 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         .putString(KEY_REJ_GDOP, String.valueOf(opts.getRejGDop()))
         .putString(KEY_REJ_IONNO, String.valueOf(opts.getRejIonno()))
         .putString(KEY_MIN_FIX_LOCK, String.valueOf(opts.getMinLockToFixAmbiguity()))
-        .putString(KEY_MIN_FIX_RATIO, String.valueOf(opts.getMinElevationToFixAmbiguityRad())) /* fixme*/
+        .putString(KEY_MIN_FIX_RATIO, String.valueOf(opts.getValidThresoldAR()))
         .putString(KEY_MAX_POS_VAR, String.valueOf(opts.getMaxPositionVariance()))
-        .putString(KEY_MIN_FIX_ELEVATION, String.valueOf(opts.getMinElevationToFixAmbiguityRad()))
-        .putString(KEY_MIN_HOLD_ELEVATION, String.valueOf(opts.getMinElevationToHoldAmbiguityRad()))
+        // Read back in degrees
+        .putString(KEY_MIN_FIX_ELEVATION, String.valueOf(Math.toDegrees(opts.getMinElevationToFixAmbiguityRad())))
+        .putString(KEY_MIN_HOLD_ELEVATION, String.valueOf(Math.toDegrees(opts.getMinElevationToHoldAmbiguityRad())))
         .commit()
         ;
         if (DBG) {
@@ -608,8 +620,45 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         final boolean needUpdate = force || !prefs.contains(KEY_POSITIONING_MODE);
 
         if (needUpdate) {
-            setValue(ctx, new ProcessingOptions());
+            setValue(ctx, getRecommendedOptions());
         }
+    }
+
+    /**
+     * RTKLIB defaults tuned for network RTK (VRS) with a dual frequency receiver
+     */
+    public static ProcessingOptions getRecommendedOptions() {
+        ProcessingOptions opts = new ProcessingOptions();
+        opts.setPositioningMode(PositioningMode.KINEMA);
+        opts.setNumberOfFrequencies(2);
+        opts.setNavigationSystem(EnumSet.of(NavigationSystem.GPS, NavigationSystem.GLO,
+                NavigationSystem.GAL, NavigationSystem.QZS, NavigationSystem.CMP));
+        opts.setElevationMask(Math.toRadians(15));
+        opts.setIonosphereCorrection(IonosphereOption.BRDC);
+        opts.setTroposphereCorrection(TroposphereOption.SAAS);
+        // Continuous AR: a wrong fix is not held and propagated as with fix and hold
+        opts.setModeAR(1);
+        // GLONASS inter-channel biases differ between receiver brands
+        opts.setModeGAR(0);
+        opts.setModeBDSAR(1);
+        opts.setValidThresoldAR(3.0);
+        return opts;
+    }
+
+    private void confirmResetToRecommended() {
+        new AlertDialog.Builder(getActivity())
+            .setTitle(R.string.procopt_reset_recommended_title)
+            .setMessage(R.string.procopt_reset_recommended_confirm)
+            .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    setValue(getActivity(), getRecommendedOptions());
+                    // Preferences cache their values: rebuild the screen to show the new ones
+                    getActivity().recreate();
+                }
+            })
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
     }
 
 }
