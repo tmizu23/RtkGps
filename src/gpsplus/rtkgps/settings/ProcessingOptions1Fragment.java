@@ -3,6 +3,7 @@ package gpsplus.rtkgps.settings;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -12,8 +13,10 @@ import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
+import android.preference.PreferenceScreen;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 
 import gpsplus.rtkgps.BuildConfig;
@@ -166,6 +169,25 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         });
 
         initSettings1();
+    }
+
+    @Override
+    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference) {
+        final boolean handled = super.onPreferenceTreeClick(preferenceScreen, preference);
+        if (preference instanceof PreferenceScreen) {
+            // A nested screen is shown in a dialog whose action bar "up" does nothing: close it
+            final Dialog dialog = ((PreferenceScreen) preference).getDialog();
+            final View home = dialog == null ? null : dialog.findViewById(android.R.id.home);
+            if (home != null && home.getParent() != null && home.getParent().getParent() instanceof View) {
+                ((View) home.getParent().getParent()).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dialog.dismiss();
+                    }
+                });
+            }
+        }
+        return handled;
     }
 
     @Override
