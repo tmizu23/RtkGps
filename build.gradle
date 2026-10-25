@@ -19,9 +19,11 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.2'
 }
 
-// USB / Bluetooth streams reach RTKLIB through a unix domain socket (STR_UNIXSVR),
-// which upstream RTKLIB lacks; patch the submodule before the native build
-def rtklibPatches = ['jni/RTKLIB-unixsocket.patch']
+// Patches applied to the RTKLIB submodule before the native build:
+// - USB / Bluetooth streams reach RTKLIB through a unix domain socket (STR_UNIXSVR),
+//   which upstream RTKLIB lacks
+// - send the single solution as GGA to the base (VRS) even when its output is suppressed
+def rtklibPatches = ['jni/RTKLIB-unixsocket.patch', 'jni/RTKLIB-nmea-single.patch']
 tasks.register('patchRtklib') {
     inputs.files(rtklibPatches)
     doLast {

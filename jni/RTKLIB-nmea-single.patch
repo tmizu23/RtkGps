@@ -1,0 +1,24 @@
+diff --git a/src/rtksvr.c b/src/rtksvr.c
+index c318bde..b329834 100644
+--- a/src/rtksvr.c
++++ b/src/rtksvr.c
+@@ -592,7 +592,8 @@ static void send_nmea(rtksvr_t *svr, uint32_t *tickreset)
+     }
+     else if (svr->nmeareq==2) { /* single-solution mode */
+         if (norm(svr->rtk.sol.rr, 3) <= RE_WGS84 / 2) return;
+-        sol_nmea.stat = svr->rtk.sol.stat;
++        /* single solution suppressed by !outsingle is still a valid position (VRS) */
++        sol_nmea.stat = svr->rtk.sol.stat==SOLQ_NONE?SOLQ_SINGLE:svr->rtk.sol.stat;
+         sol_nmea.time = utc2gpst(timeget());
+         sol_nmea.ns = svr->rtk.sol.ns;
+         sol_nmea.age = svr->rtk.sol.age;
+@@ -612,7 +613,8 @@ static void send_nmea(rtksvr_t *svr, uint32_t *tickreset)
+             *tickreset=tick;
+         }
+         if (norm(svr->rtk.sol.rr, 3) <= RE_WGS84 / 2) return;
+-        sol_nmea.stat = svr->rtk.sol.stat;
++        /* single solution suppressed by !outsingle is still a valid position (VRS) */
++        sol_nmea.stat = svr->rtk.sol.stat==SOLQ_NONE?SOLQ_SINGLE:svr->rtk.sol.stat;
+         sol_nmea.time=utc2gpst(timeget());
+         sol_nmea.ns = svr->rtk.sol.ns;
+         sol_nmea.age = svr->rtk.sol.age;
