@@ -103,6 +103,10 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
 
     private static final String KEY_MIN_FIX_LOCK = "min_fix_lock";
 
+    private static final String KEY_RTKLIB_SETTINGS_VERSION = "rtklib_settings_version";
+    /** settings written for RTKLIB demo5 (rtklibexplorer 2.5.x) */
+    private static final int RTKLIB_SETTINGS_VERSION_DEMO5 = 1;
+
     // Settings
     private PositioningModePreference mPositioningModePref;
     private ListPreference mNumberOfFrequenciesPref;
@@ -621,6 +625,56 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
 
         if (needUpdate) {
             setValue(ctx, getRecommendedOptions());
+        } else {
+            migrateToDemo5(prefs);
+        }
+        prefs.edit().putInt(KEY_RTKLIB_SETTINGS_VERSION, RTKLIB_SETTINGS_VERSION_DEMO5).commit();
+    }
+
+    /**
+     * Settings saved with RTKLIB 2.4.3 b33 never set the demo5 AR options (saved as 0),
+     * and some values were removed or changed meaning in demo5: reset them to demo5 defaults
+     */
+    private static void migrateToDemo5(SharedPreferences prefs) {
+        if (prefs.getInt(KEY_RTKLIB_SETTINGS_VERSION, 0) >= RTKLIB_SETTINGS_VERSION_DEMO5) return;
+
+        final ProcessingOptions defaults = getRecommendedOptions();
+        final SharedPreferences.Editor editor = prefs.edit();
+
+        editor
+        .putString(KEY_GPS_AMBIGUITY_RESOLUTION, String.valueOf(defaults.getModeGpsAR()))
+        .putString(KEY_AR_FILTER, String.valueOf(defaults.getArFilter()))
+        .putString(KEY_MIN_FIX_SATS, String.valueOf(defaults.getMinFixToFixAmbiguity()))
+        .putString(KEY_MIN_HOLD_SATS, String.valueOf(defaults.getMinHoldToFixAmbiguity()))
+        .putString(KEY_MIN_DROP_SATS, String.valueOf(defaults.getMinDropToFixAmbiguity()))
+        .putString(KEY_RCV_STDS, String.valueOf(defaults.getRcvStds()))
+        .putString(KEY_VAR_HOLD_AMB, String.valueOf(defaults.getVarHoldAmb()))
+        .putString(KEY_GAIN_HOLD_AMB, String.valueOf(defaults.getGainHoldAmb()))
+        // b33: innovation threshold for all measurements, demo5: phase only
+        .putString(KEY_REJ_IONNO, String.valueOf(defaults.getRejIonno()))
+        // b33: ratio threshold, demo5: max position variance for AR
+        .putString(KEY_MAX_POS_VAR, String.valueOf(defaults.getMaxPositionVariance()));
+
+        // Options removed from demo5 (QZSS LEX, ZTD correction, slant TEC)
+        if (!isEnumName(IonosphereOption.class, prefs.getString(KEY_IONOSPHERE_CORRECTION, null))) {
+            editor.putString(KEY_IONOSPHERE_CORRECTION, defaults.getIonosphereCorrection().name());
+        }
+        if (!isEnumName(TroposphereOption.class, prefs.getString(KEY_TROPOSPHERE_CORRECTION, null))) {
+            editor.putString(KEY_TROPOSPHERE_CORRECTION, defaults.getTroposphereCorrection().name());
+        }
+        if (!isEnumName(EphemerisOption.class, prefs.getString(KEY_SAT_EPHEM_CLOCK, null))) {
+            editor.putString(KEY_SAT_EPHEM_CLOCK, defaults.getSatEphemerisOption().name());
+        }
+        editor.commit();
+    }
+
+    static <T extends Enum<T>> boolean isEnumName(Class<T> clazz, String name) {
+        if (name == null) return false;
+        try {
+            Enum.valueOf(clazz, name);
+            return true;
+        } catch (IllegalArgumentException iae) {
+            return false;
         }
     }
 

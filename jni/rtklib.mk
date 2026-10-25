@@ -42,9 +42,7 @@ LOCAL_SRC_FILES := \
     $(RTKLIB_PATH)/src/postpos.c \
     $(RTKLIB_PATH)/src/ppp.c \
     $(RTKLIB_PATH)/src/ppp_ar.c \
-    $(RTKLIB_PATH)/src/ppp_corr.c \
     $(RTKLIB_PATH)/src/preceph.c \
-    $(RTKLIB_PATH)/src/qzslex.c \
     $(RTKLIB_PATH)/src/rcvraw.c \
     $(RTKLIB_PATH)/src/rinex.c \
     $(RTKLIB_PATH)/src/rtcm.c \
@@ -57,24 +55,24 @@ LOCAL_SRC_FILES := \
     $(RTKLIB_PATH)/src/solution.c \
     $(RTKLIB_PATH)/src/stream.c \
     $(RTKLIB_PATH)/src/streamsvr.c \
+    $(RTKLIB_PATH)/src/sofa.c \
     $(RTKLIB_PATH)/src/tides.c \
-    $(RTKLIB_PATH)/src/tle.c
+    $(RTKLIB_PATH)/src/tle.c \
+    $(RTKLIB_PATH)/src/trace.c
 
 LOCAL_SRC_FILES += \
     $(RTKLIB_PATH)/src/rcv/binex.c \
     $(RTKLIB_PATH)/src/rcv/crescent.c \
-    $(RTKLIB_PATH)/src/rcv/gw10.c \
     $(RTKLIB_PATH)/src/rcv/javad.c \
     $(RTKLIB_PATH)/src/rcv/novatel.c \
     $(RTKLIB_PATH)/src/rcv/nvs.c \
-    $(RTKLIB_PATH)/src/rcv/rcvlex.c \
     $(RTKLIB_PATH)/src/rcv/rt17.c \
     $(RTKLIB_PATH)/src/rcv/septentrio.c \
     $(RTKLIB_PATH)/src/rcv/skytraq.c \
     $(RTKLIB_PATH)/src/rcv/ublox.c \
-    $(RTKLIB_PATH)/src/rcv/cmr.c \
-    $(RTKLIB_PATH)/src/rcv/tersus.c \
-    $(RTKLIB_PATH)/src/rcv/ss2.c \
+    $(RTKLIB_PATH)/src/rcv/swiftnav.c \
+    $(RTKLIB_PATH)/src/rcv/unicore.c
+
 LOCAL_SRC_FILES += log.c
 
 #

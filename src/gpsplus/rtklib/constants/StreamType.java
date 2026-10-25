@@ -21,33 +21,33 @@ public enum StreamType implements IHasRtklibId {
     /** stream type: TCP client */
     TCPCLI(4, R.string.str_tcpcli),
 
-    /** stream type: UDP */
-    UDP(5, R.string.str_udp),
-
     /** stream type: NTRIP server */
-    NTRIPSVR(6, R.string.str_ntripsvr),
+    NTRIPSVR(5, R.string.str_ntripsvr),
 
     /** stream type: NTRIP client */
-    NTRIPCLI(7, R.string.str_ntripcli),
+    NTRIPCLI(6, R.string.str_ntripcli),
 
     /** stream type: ftp */
-    FTP(8, R.string.str_ftp),
+    FTP(7, R.string.str_ftp),
 
     /** stream type: http */
-    HTTP(9, R.string.str_http),
+    HTTP(8, R.string.str_http),
 
-    UDPCLI(13, R.string.str_udpcli),
+    /** stream type: UDP server */
+    UDP(10, R.string.str_udp),
 
-    /** stream type: unix server */
-    UNIXSVR(15, R.string.str_unixsvr),
+    UDPCLI(11, R.string.str_udpcli),
 
-    // XXX
-    BLUETOOTH(15, R.string.str_bluetooth),
-
-    USB(15, R.string.str_usb),
+    /** stream type: unix server (jni/RTKLIB-unixsocket.patch) */
+    UNIXSVR(13, R.string.str_unixsvr),
 
     // XXX
-    MOBILEMAPPER(15, R.string.str_mobilemapper),
+    BLUETOOTH(13, R.string.str_bluetooth),
+
+    USB(13, R.string.str_usb),
+
+    // XXX
+    MOBILEMAPPER(13, R.string.str_mobilemapper),
 
     ;
 

@@ -22,9 +22,7 @@ public enum EphemerisOption implements IHasRtklibId {
     /** ephemeris option: broadcast + SSR APC correction (antenna phase  center value) */
     SSRAPC(3, R.string.ephopt_ssrapc,null),
     /** ephemeris option: broadcast + SSR CoM correction (satellite center of mass value)*/
-    SSRCOM(4, R.string.ephopt_ssrcom,null),
-    /** ephemeris option: QZSS LEX ephemeris */
-    LEX(5, R.string.ephopt_lex,null)
+    SSRCOM(4, R.string.ephopt_ssrcom,null)
     ;
 
     private final int mRtklibId;

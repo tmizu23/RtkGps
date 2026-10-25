@@ -16,11 +16,7 @@ public enum TroposphereOption implements IHasRtklibId {
     /** ZTD estimation */
     EST(3, R.string.tropopt_est),
     /** ZTD+grad estimation */
-    ESTG(4, R.string.tropopt_estg),
-    /** ZTD correction */
-    COR(5, R.string.tropopt_cor),
-    /** ZTD+grad correction */
-    CORG(6, R.string.tropopt_corg)
+    ESTG(4, R.string.tropopt_estg)
     ;
 
     private final int mRtklibId;

@@ -4,15 +4,16 @@ import gpsplus.rtkgps.R;
 
 public enum StationPositionType implements IHasRtklibId {
 
+    /** POSOPT_POS_LLH: rb/ru of prcopt (always ECEF here) */
     POS_IN_PRCOPT(0, R.string.stapos_in_prcopt),
 
-    AVG_OF_SINGLE_POS(1, R.string.stapos_avg_of_single),
+    AVG_OF_SINGLE_POS(2, R.string.stapos_avg_of_single),
 
-    READ_FROM_FILE(2, R.string.stapos_read_from_file),
+    READ_FROM_FILE(3, R.string.stapos_read_from_file),
 
-    RINEX_HEADER(3, R.string.stapos_rinex_hdr),
+    RINEX_HEADER(4, R.string.stapos_rinex_hdr),
 
-    RTCM_POS(4, R.string.stapos_rtcm_pos)
+    RTCM_POS(5, R.string.stapos_rtcm_pos)
 
     ;
 

@@ -34,21 +34,21 @@ public class Constants {
     /** min satellite PRN number of QZSS SAIF */
     public final static int MINPRNQZS_S = 183;
     /** max satellite PRN number of QZSS SAIF */
-    public final static int MAXPRNQZS_S = 185;
+    public final static int MAXPRNQZS_S = 191;
     /** number of QZSS satellites */
     public final static int NSATQZS = MAXPRNQZS-MINPRNQZS+1;
 
     /** min satellite sat number of BeiDou */
     public final static int MINPRNCMP = 1;
     /** max satellite sat number of BeiDou */
-    public final static int MAXPRNCMP = 37;
+    public final static int MAXPRNCMP = 50;
     /** number of Compass satellites */
     public final static int NSATCMP = MAXPRNCMP-MINPRNCMP+1;
 
     /** min satellite PRN number of SBAS */
     public final static int MINPRNSBS = 120;
     /** max satellite PRN number of SBAS */
-    public final static int MAXPRNSBS = 142;
+    public final static int MAXPRNSBS = 158;
     /** number of SBAS satellites */
     public final static int NSATSBS = MAXPRNSBS-MINPRNSBS+1;
 

@@ -25,7 +25,7 @@ public enum SolutionFormat implements IHasRtklibId {
     NMEA(3, R.string.solf_nmea),
 
     /** solution format: GSI-F1/2/3 */
-    GSIF(4, R.string.solf_gsif)
+    GSIF(5, R.string.solf_gsif)
     ;
 
     private final int mRtklibId;

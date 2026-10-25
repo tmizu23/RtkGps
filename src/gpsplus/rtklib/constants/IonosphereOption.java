@@ -20,11 +20,7 @@ public enum IonosphereOption implements IHasRtklibId {
     /** IONEX TEC model */
     TEC(5, R.string.ionoopt_tec),
     /** QZSS broadcast model */
-    QZS(6, R.string.ionoopt_qzs),
-    /** QZSS LEX ionospehre */
-    LEX(7, R.string.ionoopt_lex),
-    /** SLANT TEC model */
-    STEC(8, R.string.ionoopt_stec)
+    QZS(6, R.string.ionoopt_qzs)
     ;
 
     private final int mRtklibId;

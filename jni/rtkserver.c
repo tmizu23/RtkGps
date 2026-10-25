@@ -54,7 +54,7 @@ static void RtkServer__create(JNIEnv* env, jobject thiz)
 static void RtkServer__destroy(JNIEnv* env, jobject thiz)
 {
    struct native_ctx_t *nctx;
-   char *cmds[3]={0,};
+   const char *cmds[3]={0,};
 
    LOGV("RtkServer__destroy()");
 
@@ -186,19 +186,19 @@ static jboolean RtkServer__rtksvrstart(JNIEnv* env, jclass thiz,
       goto rtksvrstart_end;
 
     char errmsg[2048]="";                       //  Modif Mathieu Peyréga : adapt to new 2.4.3b26 API
-    char *cmds_periodic[]={NULL,NULL,NULL};     //  Modif Mathieu Peyréga : adapt to new 2.4.3b26 API
+    const char *cmds_periodic[]={NULL,NULL,NULL};     //  Modif Mathieu Peyréga : adapt to new 2.4.3b26 API
 
    if (!rtksvrstart(
 	    &nctx->rtksvr,
 	    /* SvrCycle ms */ j_cycle,
 	    /* SvrBuffSize */ j_buffsize,
 	    /* stream types */ strs,
-	    /* paths */ (char **)paths,
+	    /* paths */ paths,
 	    /* input stream format */ format,
 	    /* NavSelect */ j_navsel,
-	    /* input stream start commands */ (char **)cmds,
-        /* input stream periodic  commands */ (char **)cmds_periodic,   //  Modif Mathieu Peyréga : adapt to new 2.4.3b26 API
-	    /* receiver options */ (char **)rcvopts,
+	    /* input stream start commands */ cmds,
+        /* input stream periodic  commands */ cmds_periodic,   //  Modif Mathieu Peyréga : adapt to new 2.4.3b26 API
+	    /* receiver options */ rcvopts,
 	    /* nmea request cycle ms */ j_nmea_cycle,
 	    /* nmea request type */ j_nmea_req,
 	    /* transmitted nmea position  */ nmeapos,
@@ -262,7 +262,7 @@ static void RtkServer__stop(JNIEnv* env, jclass thiz, jobjectArray j_cmds)
 
 rtksvrstop_close:
 
-   rtksvrstop(&nctx->rtksvr,(char **)cmds);
+   rtksvrstop(&nctx->rtksvr,cmds);
 
    traceclose();
    rtkclosestat();
@@ -392,10 +392,10 @@ static void RtkServer__get_observation_status(JNIEnv* env, jclass thiz,
    jint *jsnr;
    gtime_t time;
    int sat[MAXSAT];
-   int vsat[MAXSAT];
+   int vsat[MAXSAT][NFREQ];
+   int vsat1[MAXSAT];
    double az[MAXSAT];
    double el[MAXSAT];
-   int *snr0[MAXSAT];
    int snr[MAXSAT][NFREQ];
 
    nctx = (struct native_ctx_t *)(uintptr_t)(*env)->GetLongField(env, thiz, m_object_field);
@@ -404,12 +404,8 @@ static void RtkServer__get_observation_status(JNIEnv* env, jclass thiz,
       return;
    }
 
-   for (i=0;i<MAXSAT;i++) {
-      snr0[i]=snr[i];
-   }
-
    ns = rtksvrostat(&nctx->rtksvr, receiver,
-	 &time, sat, az, el, snr0, vsat);
+	 &time, sat, az, el, snr, vsat);
 
    if (ns > MAXSAT)
       ns = MAXSAT;
@@ -459,9 +455,10 @@ static void RtkServer__get_observation_status(JNIEnv* env, jclass thiz,
       (*env)->ReleaseIntArrayElements(env, jtmp, jsnr, 0);
    }
 
-   // vsat
+   // vsat (valid on the first frequency)
+   for (i=0; i<ns; ++i) vsat1[i] = vsat[i][0];
    jtmp = (*env)->GetObjectField(env, status_obj, obs_status_fields.vsat);
-   (*env)->SetIntArrayRegion(env, jtmp, 0, ns, vsat);
+   (*env)->SetIntArrayRegion(env, jtmp, 0, ns, vsat1);
 
 }
 

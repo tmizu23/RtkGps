@@ -5,7 +5,7 @@
 
 #define LOG_TAG "rtklib"
 
-extern int showmsg(char *format,...) {
+extern int showmsg(const char *format,...) {
    int r;
    va_list ap;
 

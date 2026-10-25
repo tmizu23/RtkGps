@@ -127,6 +127,17 @@ public class SettingsHelper {
 
     public static void setDefaultValues(Context ctx, boolean force) {
 
+        // Stream formats removed from RTKLIB demo5 (OEM3, SS2, GW10, SiRF, LEXR)
+        for (String name: new String[] {InputRoverFragment.SHARED_PREFS_NAME,
+                InputBaseFragment.SHARED_PREFS_NAME, InputCorrectionFragment.SHARED_PREFS_NAME}) {
+            SharedPreferences prefs = ctx.getSharedPreferences(name, Context.MODE_PRIVATE);
+            String format = prefs.getString(InputRoverFragment.KEY_FORMAT, null);
+            if (format != null && !ProcessingOptions1Fragment.isEnumName(StreamFormat.class, format)) {
+                prefs.edit().putString(InputRoverFragment.KEY_FORMAT,
+                        InputRoverFragment.DEFAULT_STREAM_FORMAT.name()).commit();
+            }
+        }
+
         ProcessingOptions1Fragment.setDefaultValues(ctx, force);
         InputRoverFragment.setDefaultValues(ctx, force);
         InputBaseFragment.setDefaultValues(ctx, force);
