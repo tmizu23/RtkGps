@@ -109,9 +109,6 @@ public class ProcessingOptions {
 
 	/** rtkexplorer stuff */
 
-	/** GPS AR mode (o:off,1:on)  */
-	private int gpsmodear;
-
 	/** BeiDou AR mode (0:off,1:on)  */
 	private int bdsmodear;
 
@@ -292,7 +289,6 @@ public class ProcessingOptions {
         mNative.modear = src.mNative.modear;
         mNative.glomodear = src.mNative.glomodear;
 
-	mNative.gpsmodear = src.mNative.gpsmodear;
 	mNative.bdsmodear = src.mNative.bdsmodear;
 	mNative.arfilter = src.mNative.arfilter;
     mNative.minfixsats = src.mNative.minfixsats;
@@ -423,23 +419,6 @@ public class ProcessingOptions {
         this.mNative.glomodear = mode;
     }
 
-
-    /**
-     * get gps ambiguity resolution mode
-     * GPS AR mode (0:off,1:on)
-     * @return
-     */
-    public int getModeGpsAR(){
-        return this.mNative.gpsmodear;
-    }
-
-    /**
-     * set gps ambiguity resolution mode
-     * @param mode GPS AR mode (0:off,1:on)
-     */
-    public void setModeGpsAR(int mode){
-        this.mNative.gpsmodear = mode;
-    }
 
 
     /**

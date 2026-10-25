@@ -24,7 +24,6 @@ static struct {
    jfieldID glomodear;
 
 // Advanced options for rtkexplorer
-   jfieldID gpsmodear;
    jfieldID bdsmodear;
    jfieldID arfilter;
    jfieldID minfixsats;
@@ -183,7 +182,6 @@ void processing_options2prcopt_t(JNIEnv* env, jobject thiz, prcopt_t *dst)
    GET_FIELD(modear, Int)
    GET_FIELD(glomodear, Int)
 
-   GET_FIELD(gpsmodear, Int)
    GET_FIELD(bdsmodear, Int)
    GET_FIELD(arfilter, Int)
    GET_FIELD(minfixsats, Int)
@@ -349,7 +347,6 @@ static void ProcessingOptions_load_defaults(JNIEnv* env, jobject thiz)
    SET_FIELD(modear, Int)
    SET_FIELD(glomodear, Int)
 
-   SET_FIELD(gpsmodear, Int)
    SET_FIELD(bdsmodear, Int)
    SET_FIELD(arfilter, Int)
    SET_FIELD(minfixsats, Int)
@@ -515,7 +512,6 @@ static int init_prcopt_fields_methods(JNIEnv* env, jclass clazz)
    INIT_FIELD(modear, "I")
    INIT_FIELD(glomodear, "I")
 
-   INIT_FIELD(gpsmodear, "I")
    INIT_FIELD(bdsmodear, "I")
    INIT_FIELD(arfilter, "I")
    INIT_FIELD(minfixsats, "I")

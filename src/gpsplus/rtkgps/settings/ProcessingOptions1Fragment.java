@@ -65,7 +65,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
     public static final String KEY_AMBIGUITY_RESOLUTION = "ambiguity_resolution";
     public static final String KEY_GLONASS_AMBIGUITY_RESOLUTION ="glonass_ambiguity_resolution";
 
-    public static final String KEY_GPS_AMBIGUITY_RESOLUTION ="gps_ambiguity_resolution";
     public static final String KEY_BDS_AMBIGUITY_RESOLUTION ="bds_ambiguity_resolution";
 
     public static final String KEY_AR_FILTER ="ar_filter";
@@ -112,7 +111,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
     private ListPreference mAmbiguityResolutionPref;
     private ListPreference mGlonassAmbiguityResolutionPref;
 
-    private ListPreference mGpsAmbiguityResolutionPref;
     private ListPreference mBDSAmbiguityResolutionPref;
 
     private ListPreference mArFilterPref;
@@ -226,7 +224,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
 
         mGlonassAmbiguityResolutionPref = (ListPreference)findPreference(KEY_GLONASS_AMBIGUITY_RESOLUTION);
 
-        mGpsAmbiguityResolutionPref = (ListPreference)findPreference(KEY_GPS_AMBIGUITY_RESOLUTION);
 
         mBDSAmbiguityResolutionPref = (ListPreference)findPreference(KEY_BDS_AMBIGUITY_RESOLUTION);
 
@@ -277,8 +274,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         summary = mGlonassAmbiguityResolutionPref.getEntry();
         mGlonassAmbiguityResolutionPref.setSummary(summary);
 
-        summary = mGpsAmbiguityResolutionPref.getEntry();
-        mGpsAmbiguityResolutionPref.setSummary(summary);
 
         summary = mBDSAmbiguityResolutionPref.getEntry();
         mBDSAmbiguityResolutionPref.setSummary(summary);
@@ -388,7 +383,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         findPreference(KEY_AMBIGUITY_RESOLUTION).setEnabled(rtk || ppp);
         findPreference(KEY_GLONASS_AMBIGUITY_RESOLUTION).setEnabled(rtk || ppp);
 
-        findPreference(KEY_GPS_AMBIGUITY_RESOLUTION).setEnabled(rtk || ppp);
         findPreference(KEY_BDS_AMBIGUITY_RESOLUTION).setEnabled(rtk || ppp);
 
         findPreference(KEY_AR_FILTER).setEnabled(rtk || ppp);
@@ -468,7 +462,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         opts.setModeAR(Integer.valueOf(prefs.getString(KEY_AMBIGUITY_RESOLUTION, "0")));
         opts.setModeGAR(Integer.valueOf(prefs.getString(KEY_GLONASS_AMBIGUITY_RESOLUTION, "0")));
 
-        opts.setModeGpsAR(Integer.valueOf(prefs.getString(KEY_GPS_AMBIGUITY_RESOLUTION, "0")));
         opts.setModeBDSAR(Integer.valueOf(prefs.getString(KEY_BDS_AMBIGUITY_RESOLUTION, "0")));
 
         opts.setArFilter(Integer.valueOf(prefs.getString(KEY_AR_FILTER, "0")));
@@ -549,7 +542,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         .putBoolean(KEY_RAIM_FDE, opts.isRaimFdeEnabled())
         .putString(KEY_AMBIGUITY_RESOLUTION, String.valueOf(opts.getModeAR()))
         .putString(KEY_GLONASS_AMBIGUITY_RESOLUTION, String.valueOf(opts.getModeGAR()))
-        .putString(KEY_GPS_AMBIGUITY_RESOLUTION, String.valueOf(opts.getModeGpsAR()))
         .putString(KEY_BDS_AMBIGUITY_RESOLUTION, String.valueOf(opts.getModeBDSAR()))
         .putString(KEY_AR_FILTER, String.valueOf(opts.getArFilter()))
         .putString(KEY_AR_MIN_FIX, String.valueOf(opts.getMinFixCountToHoldAmbiguity()))
@@ -610,7 +602,6 @@ public class ProcessingOptions1Fragment extends PreferenceFragment {
         final SharedPreferences.Editor editor = prefs.edit();
 
         editor
-        .putString(KEY_GPS_AMBIGUITY_RESOLUTION, String.valueOf(defaults.getModeGpsAR()))
         .putString(KEY_AR_FILTER, String.valueOf(defaults.getArFilter()))
         .putString(KEY_MIN_FIX_SATS, String.valueOf(defaults.getMinFixToFixAmbiguity()))
         .putString(KEY_MIN_HOLD_SATS, String.valueOf(defaults.getMinHoldToFixAmbiguity()))

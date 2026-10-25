@@ -318,15 +318,6 @@
     <item>2</item>
     <item>3</item>
   </string-array>
-  <string name="procopt_ambiguity_gps_resolution_title">Résolution des ambiguïtés entières GPS</string>
-  <string-array name="procopt_gps_ambiguity_resolution_entries">
-    <item>Off</item>
-    <item>On</item>
-  </string-array>
-  <string-array name="procopt_gps_ambiguity_resolution_values">
-    <item>0</item>
-    <item>1</item>
-  </string-array>
   <string name="procopt_ambiguity_bds_resolution_title">Résolution des ambiguïtés entières BeiDou</string>
   <string name="procopt_ambiguity_bds_resolution_dialog_title">Résolution des ambiguïtés entières BeiDou</string>
   <string-array name="procopt_bds_ambiguity_resolution_entries">
