@@ -37,7 +37,7 @@
 		android:key="button_ambiguity_setting_key"
 		android:title="@string/procopt_ambiguity_resolution_sub_preference_title">
 		<ListPreference
-			android:defaultValue="0"
+			android:defaultValue="1"
 			android:dialogTitle="@string/procopt_ambiguity_resolution_dialog_title"
 			android:entries="@array/procopt_ambiguity_resolution_entries"
 			android:entryValues="@array/procopt_ambiguity_resolution_values"
@@ -53,7 +53,7 @@
 			android:title="@string/procopt_ambiguity_glonass_resolution_title" />
 
 		<ListPreference
-			android:defaultValue="0"
+			android:defaultValue="1"
 			android:dialogTitle="@string/procopt_ambiguity_gps_resolution_title"
 			android:entries="@array/procopt_gps_ambiguity_resolution_entries"
 			android:entryValues="@array/procopt_gps_ambiguity_resolution_values"
@@ -61,7 +61,7 @@
 			android:title="@string/procopt_ambiguity_gps_resolution_title" />
 
 		<ListPreference
-			android:defaultValue="0"
+			android:defaultValue="1"
 			android:dialogTitle="@string/procopt_ambiguity_bds_resolution_dialog_title"
 			android:entries="@array/procopt_bds_ambiguity_resolution_entries"
 			android:entryValues="@array/procopt_bds_ambiguity_resolution_values"
@@ -78,31 +78,31 @@
 
 
 		<EditTextPreference
-			android:defaultValue="100"
+			android:defaultValue="0"
 			android:inputType="number"
 			android:key="min_fix_lock"
 			android:title="@string/procopt_min_lock_to_fix_ambiguity_title" />
 
 		<EditTextPreference
-			android:defaultValue="15"
+			android:defaultValue="0"
 			android:inputType="numberDecimal"
 			android:key="min_fix_elevation"
 			android:title="@string/procopt_min_elevation_to_fix_ambiguity_title" />
 
 		<EditTextPreference
-			android:defaultValue="100"
+			android:defaultValue="20"
 			android:inputType="number"
 			android:key="ar_min_fix"
 			android:title="@string/procopt_armin_fix_ambiguity_title" />
 
 		<EditTextPreference
-			android:defaultValue="15"
+			android:defaultValue="0"
 			android:inputType="numberDecimal"
 			android:key="min_hold_elevation"
 			android:title="@string/procopt_min_elevation_to_hold_ambiguity_title" />
 
 		<EditTextPreference
-			android:defaultValue="100"
+			android:defaultValue="20"
 			android:inputType="numberDecimal"
 			android:key="ar_out_cnt"
 			android:title="@string/procopt_outage_to_reset_ambiguity_title" />
@@ -114,36 +114,16 @@
 			android:title="@string/procopt_slip_threshold_title" />
 
 		<EditTextPreference
-			android:defaultValue="100"
+			android:defaultValue="30"
 			android:inputType="numberDecimal"
 			android:key="max_age"
 			android:title="@string/procopt_max_age_of_diff_s_title" />
 
-		<ListPreference
-			android:defaultValue="0"
-			android:dialogTitle="@string/procopt_sync_sol_title"
-			android:entries="@array/procopt_sync_sol_entries"
-			android:entryValues="@array/procopt_sync_sol_values"
-			android:key="sync_sol"
-			android:title="@string/procopt_sync_sol_title" />
-
 		<EditTextPreference
-			android:defaultValue="30.0"
-			android:inputType="numberDecimal"
-			android:key="rej_gdop"
-			android:title="@string/procopt_reject_threshold_of_gdop_title" />
-
-		<EditTextPreference
-			android:defaultValue="1000"
+			android:defaultValue="5.0"
 			android:inputType="numberDecimal"
 			android:key="rej_ionno"
 			android:title="@string/procopt_reject_threshold_of_innov_title" />
-
-		<EditTextPreference
-			android:defaultValue="1"
-			android:inputType="number"
-			android:key="ar_max_iter"
-			android:title="@string/procopt_number_of_ar_iterations_title" />
 
 		<EditTextPreference
 			android:defaultValue="1"
@@ -152,7 +132,7 @@
 			android:title="@string/procopt_number_of_filter_iterations_title" />
 
 		<EditTextPreference
-			android:defaultValue="3"
+			android:defaultValue="4"
 			android:inputType="number"
 			android:key="min_fix_sats"
 			android:title="@string/procopt_min_fix_sats_title" />
@@ -164,7 +144,7 @@
 			android:title="@string/procopt_min_hold_sats_title" />
 
 		<EditTextPreference
-			android:defaultValue="12"
+			android:defaultValue="10"
 			android:inputType="number"
 			android:key="min_drop_sats"
 			android:title="@string/procopt_min_drop_sats_title" />
@@ -178,13 +158,13 @@
 			android:title="@string/procopt_rcv_stds_title" />
 
 		<EditTextPreference
-			android:defaultValue="0.004"
+			android:defaultValue="0.25"
 			android:inputType="numberDecimal"
 			android:key="max_pos_var"
 			android:title="@string/procopt_max_pos_var_ambiguity_title" />
 
 		<ListPreference
-			android:defaultValue="0"
+			android:defaultValue="1"
 			android:dialogTitle="@string/procopt_ar_filter_title"
 			android:entries="@array/procopt_ar_filter_entries"
 			android:entryValues="@array/procopt_ar_filter_values"
@@ -192,13 +172,13 @@
 			android:title="@string/procopt_ar_filter_title" />
 
 		<EditTextPreference
-			android:defaultValue="0.001"
+			android:defaultValue="0.1"
 			android:inputType="numberDecimal"
 			android:key="var_hold_amb"
 			android:title="@string/procopt_var_hold_amb_title" />
 
 		<EditTextPreference
-			android:defaultValue="0.010"
+			android:defaultValue="0.01"
 			android:inputType="numberDecimal"
 			android:key="gain_hold_amb"
 			android:title="@string/procopt_gain_hold_amb_title" />
@@ -212,15 +192,7 @@
 			android:title="@string/procopt_out_single_title" />
 
 		<ListPreference
-			android:defaultValue="0"
-			android:dialogTitle="@string/procopt_freq_opt_title"
-			android:entries="@array/procopt_freq_opt_entries"
-			android:entryValues="@array/procopt_freq_opt_values"
-			android:key="freq_opt"
-			android:title="@string/procopt_freq_opt_title" />
-
-		<ListPreference
-			android:defaultValue="0"
+			android:defaultValue="1"
 			android:dialogTitle="@string/procopt_init_rst_title"
 			android:entries="@array/procopt_init_rst_entries"
 			android:entryValues="@array/procopt_init_rst_values"
@@ -228,7 +200,7 @@
 			android:title="@string/procopt_init_rst_title" />
 
 		<EditTextPreference
-			android:defaultValue="0"
+			android:defaultValue="1"
 			android:inputType="number"
 			android:key="max_ave_ep"
 			android:title="@string/procopt_max_averaging_epochs_title" />

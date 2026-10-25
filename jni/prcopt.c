@@ -31,14 +31,11 @@ static struct {
    jfieldID minholdsats;
    jfieldID mindropsats;
    jfieldID rcvstds;
-   jfieldID armaxiter;
    jfieldID varholdamb;
    jfieldID gainholdamb;
    jfieldID maxaveep;
    jfieldID initrst;
    jfieldID outsingle;
-   jfieldID syncsol;
-   jfieldID freqopt;
 
 //
 
@@ -74,14 +71,11 @@ static struct {
    jfieldID sclkstab;
    jfieldID thresar_0;
    jfieldID thresar_1;
-   jfieldID thresar_2;
-   jfieldID thresar_3;
    jfieldID elmaskar;
    jfieldID elmaskhold;
    jfieldID thresslip;
    jfieldID maxtdiff;
    jfieldID maxinno;
-   jfieldID maxgdop;
    jfieldID baselineConst;
    jfieldID baselineSigma;
    jfieldID ruX;
@@ -198,14 +192,11 @@ void processing_options2prcopt_t(JNIEnv* env, jobject thiz, prcopt_t *dst)
    /* demo5 replaced rcvstds with the receiver std factor err[7] */
    i = GET_FIELD2(rcvstds, Int)
    dst->err[7] = i ? 1.0 : 0.0;
-   GET_FIELD(armaxiter, Int)
    GET_FIELD(varholdamb, Double)
    GET_FIELD(gainholdamb, Double)
    GET_FIELD(maxaveep, Int)
    GET_FIELD(initrst, Int)
    GET_FIELD(outsingle, Int)
-   GET_FIELD(syncsol, Int)
-   GET_FIELD(freqopt, Int)
 
    GET_FIELD(maxout, Int)
    GET_FIELD(minlock, Int)
@@ -365,14 +356,11 @@ static void ProcessingOptions_load_defaults(JNIEnv* env, jobject thiz)
    SET_FIELD(minholdsats, Int)
    SET_FIELD(mindropsats, Int)
    SET_FIELD2(rcvstds, Int, src->err[7] != 0.0)
-   SET_FIELD(armaxiter, Int)
    SET_FIELD(varholdamb, Double)
    SET_FIELD(gainholdamb, Double)
    SET_FIELD(maxaveep, Int)
    SET_FIELD(initrst, Int)
    SET_FIELD(outsingle, Int)
-   SET_FIELD(syncsol, Int)
-   SET_FIELD(freqopt, Int)
 
    SET_FIELD(maxout, Int)
    SET_FIELD(minlock, Int)
@@ -406,14 +394,11 @@ static void ProcessingOptions_load_defaults(JNIEnv* env, jobject thiz)
    SET_FIELD(sclkstab, Double)
    SET_FIELD2(thresar_0, Double, src->thresar[0])
    SET_FIELD2(thresar_1, Double, src->thresar[1])
-   SET_FIELD2(thresar_2, Double, src->thresar[2])
-   SET_FIELD2(thresar_3, Double, src->thresar[3])
    SET_FIELD(elmaskar, Double)
    SET_FIELD(elmaskhold, Double)
    SET_FIELD(thresslip, Double)
    SET_FIELD(maxtdiff, Double)
    SET_FIELD2(maxinno, Double, src->maxinno[0])
-   SET_FIELD2(maxgdop, Double, MAXGDOP)
    SET_FIELD2(baselineConst, Double, src->baseline[0])
    SET_FIELD2(baselineSigma, Double, src->baseline[1])
    SET_FIELD2(ruX, Double, src->ru[0])
@@ -537,14 +522,11 @@ static int init_prcopt_fields_methods(JNIEnv* env, jclass clazz)
    INIT_FIELD(minholdsats, "I")
    INIT_FIELD(mindropsats, "I")
    INIT_FIELD(rcvstds, "I")
-   INIT_FIELD(armaxiter, "I")
    INIT_FIELD(varholdamb, "D")
    INIT_FIELD(gainholdamb, "D")
    INIT_FIELD(maxaveep, "I")
    INIT_FIELD(initrst, "I")
    INIT_FIELD(outsingle, "I")
-   INIT_FIELD(syncsol, "I")
-   INIT_FIELD(freqopt, "I")
 
    INIT_FIELD(maxout, "I")
    INIT_FIELD(minlock, "I")
@@ -578,14 +560,11 @@ static int init_prcopt_fields_methods(JNIEnv* env, jclass clazz)
    INIT_FIELD(sclkstab, "D")
    INIT_FIELD(thresar_0, "D")
    INIT_FIELD(thresar_1, "D")
-   INIT_FIELD(thresar_2, "D")
-   INIT_FIELD(thresar_3, "D")
    INIT_FIELD(elmaskar, "D")
    INIT_FIELD(elmaskhold, "D")
    INIT_FIELD(thresslip, "D")
    INIT_FIELD(maxtdiff, "D")
    INIT_FIELD(maxinno, "D")
-   INIT_FIELD(maxgdop, "D")
    INIT_FIELD(baselineConst, "D")
    INIT_FIELD(baselineSigma, "D")
    INIT_FIELD(ruX, "D")

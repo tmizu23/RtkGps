@@ -126,8 +126,6 @@ public class ProcessingOptions {
 
 	private int rcvstds;        /* use stdev estimates from receiver to adjust measurement variances */
 
-	private int armaxiter;      /* max iteration to resolve ambiguity */
-
 	private double varholdamb;  /* variance for fix-and-hold psuedo measurements (cycle^2) */
 
 	private double gainholdamb; /* gain used for GLO and SBAS sats to adjust ambiguity */
@@ -138,9 +136,6 @@ public class ProcessingOptions {
 
 	private int  outsingle;     /* output single by dgps/float/fix/ppp outage */
 
-	private int  syncsol;       /* solution sync mode (0:off,1:on) */
-
-	private int freqopt;        /* disable L2-AR */
 
 
         /** obs outage count to reset bias */
@@ -216,7 +211,7 @@ public class ProcessingOptions {
         private double sclkstab;
 
         /** AR validation threshold */
-        private double thresar_0, thresar_1, thresar_2, thresar_3;
+        private double thresar_0, thresar_1;
 
         /** elevation mask of AR for rising satellite (deg) */
         private double elmaskar;
@@ -230,11 +225,8 @@ public class ProcessingOptions {
         /** max difference of time (sec) */
         private double maxtdiff;
 
-        /** reject threshold of innovation (m) */
+        /** reject threshold of phase innovation (m) */
         private double maxinno;
-
-        /** reject threshold of gdop */
-        private double maxgdop;
 
         /** baseline length constraint {const,sigma} (m) */
         private double baselineConst;
@@ -307,14 +299,11 @@ public class ProcessingOptions {
 	mNative.minholdsats = src.mNative.minholdsats;
 	mNative.mindropsats = src.mNative.mindropsats;
 	mNative.rcvstds = src.mNative.rcvstds;
-	mNative.armaxiter = src.mNative.armaxiter;
 	mNative.varholdamb = src.mNative.varholdamb;
 	mNative.gainholdamb = src.mNative.gainholdamb;
 	mNative.maxaveep = src.mNative.maxaveep;
 	mNative.initrst = src.mNative.initrst;
 	mNative.outsingle = src.mNative.outsingle;
-	mNative.syncsol = src.mNative.syncsol;
-	mNative.freqopt = src.mNative.freqopt;
 
 
         mNative.maxout = src.mNative.maxout;
@@ -349,14 +338,11 @@ public class ProcessingOptions {
         mNative.sclkstab = src.mNative.sclkstab;
         mNative.thresar_0 = src.mNative.thresar_0;
         mNative.thresar_1 = src.mNative.thresar_1;
-        mNative.thresar_2 = src.mNative.thresar_2;
-        mNative.thresar_3 = src.mNative.thresar_3;
         mNative.elmaskar = src.mNative.elmaskar;
         mNative.elmaskhold = src.mNative.elmaskhold;
         mNative.thresslip = src.mNative.thresslip;
         mNative.maxtdiff = src.mNative.maxtdiff;
         mNative.maxinno = src.mNative.maxinno;
-        mNative.maxgdop = src.mNative.maxgdop;
         mNative.baselineConst = src.mNative.baselineConst;
         mNative.baselineSigma = src.mNative.baselineSigma;
         mNative.ruX = src.mNative.ruX;
@@ -515,13 +501,6 @@ public class ProcessingOptions {
         return this.mNative.rcvstds;
     }
 
-    public void setArMaxIter(int armaxiter){
-        this.mNative.armaxiter = armaxiter;
-    }
-    public int getArMaxIter(){
-        return this.mNative.armaxiter;
-    }
-
     public void setNIter(int niter){
         this.mNative.niter = niter;
     }
@@ -564,20 +543,6 @@ public class ProcessingOptions {
         return this.mNative.outsingle;
     }
 
-    public void setSyncSol(int synsol){
-        this.mNative.syncsol = synsol;
-    }
-    public int getSyncSol(){
-        return this.mNative.syncsol;
-    }
-
-    public void setFreqOpt(int fopt){
-        this.mNative.freqopt = fopt;
-    }
-    public int getFreqOpt(){
-        return this.mNative.freqopt;
-    }
-
     public void setArOutCnt(int cnt){
         this.mNative.maxout = cnt;
     }
@@ -597,13 +562,6 @@ public class ProcessingOptions {
     }
     public double getMaxAge(){
         return this.mNative.maxtdiff;
-    }
-
-    public void setRejGDop(double rdop){
-        this.mNative.maxgdop = rdop;
-    }
-    public double getRejGDop(){
-        return this.mNative.maxgdop;
     }
 
     public void setRejIonno(double ion){
